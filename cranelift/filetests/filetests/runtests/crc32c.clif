@@ -1,0 +1,25 @@
+test interpret
+test run
+target x86_64
+
+function %crc32c_i32i32(i32, i32) -> i32 {
+block0(v0: i32, v1: i32):
+    v2 = crc32c v0, v1
+    return v2
+}
+
+; run: %crc32c_i32i32(0, 0) == 0
+; run: %crc32c_i32i32(0, -1) == 0xB798B438
+; run: %crc32c_i32i32(0xADEFBECD, 0xDEADBEEF) == 0xD2D86619
+; run: %crc32c_i32i32(-1, 0xCCBEDDAB) == 0x58CD9206
+
+function %crc32c_i64i64(i64, i64) -> i32 {
+block0(v0: i64, v1: i64):
+    v2 = crc32c v0, v1
+    return v2
+}
+
+; run: %crc32c_i64i64(0, 0) == 0
+; run: %crc32c_i64i64(0, -1) == 0xC44FF94D
+; run: %crc32c_i64i64(0xADEFBECD, 0xDEADBEEF10203040) == 0xCA7FCCDC
+; run: %crc32c_i64i64(-1, 0xCCBEDDABADEFBECD) == 0xEEB27FF4
