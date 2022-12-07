@@ -575,6 +575,7 @@ pub(crate) fn define(
     let fflags: &TypeVar = &ValueType::Special(types::Flag::FFlags.into()).into();
 
     let i8: &TypeVar = &ValueType::from(LaneType::from(types::Int::I8)).into();
+    let i32: &TypeVar = &ValueType::from(LaneType::from(types::Int::I32)).into();
     let f32_: &TypeVar = &ValueType::from(LaneType::from(types::Float::F32)).into();
     let f64_: &TypeVar = &ValueType::from(LaneType::from(types::Float::F64)).into();
 
@@ -2178,14 +2179,14 @@ pub(crate) fn define(
         .operands_out(vec![a, c_if_out]),
     );
 
+    let i32_64 = &TypeVar::new(
+        "i32_64",
+        "A 32 or 64-bit scalar integer type",
+        TypeSetBuilder::new().ints(32..64).build(),
+    );
+
     {
         let code = &Operand::new("code", &imm.trapcode);
-
-        let i32_64 = &TypeVar::new(
-            "i32_64",
-            "A 32 or 64-bit scalar integer type",
-            TypeSetBuilder::new().ints(32..64).build(),
-        );
 
         let a = &Operand::new("a", i32_64);
         let x = &Operand::new("x", i32_64);
@@ -2896,6 +2897,25 @@ pub(crate) fn define(
         )
         .operands_in(vec![x])
         .operands_out(vec![a]),
+    );
+
+    let a = &Operand::new("a", i32_64);
+    let v = &Operand::new("v", i32_64);
+    let r = &Operand::new("r", i32);
+
+    ig.push(
+        Inst::new(
+            "crc32c",
+            r#"
+        Accumulate the crc32c (polynomial 0x1EDC6F41) value.
+
+        ``a`` is truncated to 32 bit.
+        The bit order of both ``a`` and ``b`` is reversed for the calculation.
+        "#,
+            &formats.binary,
+        )
+        .operands_in(vec![a, v])
+        .operands_out(vec![r]),
     );
 
     let x = &Operand::new("x", Int);

@@ -365,6 +365,7 @@ fn lower_insn_to_regs(
         | Opcode::Ishl
         | Opcode::Rotl
         | Opcode::Rotr
+        | Opcode::Crc32c
         | Opcode::Ineg
         | Opcode::Trap
         | Opcode::ResumableTrap

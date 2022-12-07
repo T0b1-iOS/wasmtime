@@ -79,6 +79,7 @@ impl LowerBackend for S390xBackend {
             | Opcode::Sshr
             | Opcode::Rotr
             | Opcode::Rotl
+            | Opcode::Crc32c
             | Opcode::Ireduce
             | Opcode::Uextend
             | Opcode::Sextend
