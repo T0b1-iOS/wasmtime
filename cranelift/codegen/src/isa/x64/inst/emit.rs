@@ -1288,6 +1288,25 @@ pub(crate) fn emit(
             sink.put1(0xC8 | (enc_reg & 7));
         }
 
+        Inst::Crc32 { size, src1, src2, dst } => {
+            let src1 = allocs.next(src1.to_reg());
+            let dst = allocs.next(dst.to_reg().to_reg());
+            debug_assert_eq!(src1, dst);
+            let rex_flags = RexFlags::from(*size);
+            let prefix = LegacyPrefixes::_F2;
+            let opcode = 0x0F38F1u32;
+            match src2.clone().to_reg_mem() {
+                RegMem::Reg { reg } => {
+                    let reg = allocs.next(reg);
+                    emit_std_reg_reg(sink, prefix, opcode, 3, dst, reg, rex_flags);
+                },
+                RegMem::Mem { addr } => {
+                    let addr = &addr.finalize(state, sink).with_allocs(allocs);
+                    emit_std_reg_mem(sink, prefix, opcode, 3, dst, addr, rex_flags, 0);
+                }
+            }
+        }
+
         Inst::Cmove {
             size,
             cc,
