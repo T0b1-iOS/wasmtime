@@ -338,6 +338,7 @@ fn lower_insn_to_regs(
         | Opcode::Isub
         | Opcode::SsubSat
         | Opcode::UsubSat
+        | Opcode::UaddOverflow
         | Opcode::AvgRound
         | Opcode::Band
         | Opcode::Bor

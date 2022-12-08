@@ -14,14 +14,14 @@
        ;; Integer instructions.
 
        ;; Integer arithmetic/bit-twiddling.
-       (AluRmiR (size OperandSize) ;; 4 or 8
+       (AluRmiR (size OperandSize) ;; 1, 2, 4 or 8
                 (op AluRmiROpcode)
                 (src1 Gpr)
                 (src2 GprMemImm)
                 (dst WritableGpr))
 
        ;; Integer arithmetic read-modify-write on memory.
-       (AluRM (size OperandSize) ;; 4 or 8
+       (AluRM (size OperandSize) ;; 1, 2, 4 or 8
               (op AluRmiROpcode)
               (src1_dst SyntheticAmode)
               (src2 Gpr))

@@ -289,6 +289,10 @@ pub(crate) fn lower_insn_to_regs(
             panic!("ALU+imm and ALU+carry ops should not appear here!");
         }
 
+        Opcode::UaddOverflow => {
+            panic!("*overflow ops not implemented");
+        }
+
         Opcode::Iabs => implemented_in_isle(ctx),
         Opcode::AvgRound => implemented_in_isle(ctx),
 

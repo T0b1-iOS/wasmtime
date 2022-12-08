@@ -201,14 +201,46 @@ pub(crate) fn emit(
                     AluRmiROpcode::Mul => panic!("unreachable"),
                 };
 
+                let prefix = if size.to_bits() == 16 {
+                    LegacyPrefixes::_66
+                } else {
+                    LegacyPrefixes::None
+                };
+
+                let (opcode_r, opcode_m) = if size.to_bits() == 8 {
+                    (opcode_r - 1, opcode_m - 1)
+                } else {
+                    (opcode_r, opcode_m)
+                };
+
+                let rex = if size.to_bits() == 8 {
+                    debug_assert!(reg_g.is_real());
+                    match reg_g.to_real_reg().unwrap().hw_enc() {
+                        regs::ENC_RBP | regs::ENC_RSP | regs::ENC_RDI | regs::ENC_RSI => RexFlags::clear_w(),
+                        _ => rex
+                    }
+                } else {
+                    rex
+                };
+
                 match src2 {
                     RegMemImm::Reg { reg: reg_e } => {
+                        let rex = if size.to_bits() == 8 {
+                            debug_assert!(reg_e.is_real());
+                            match reg_e.to_real_reg().unwrap().hw_enc() {
+                                regs::ENC_RBP | regs::ENC_RSP | regs::ENC_RDI | regs::ENC_RSI => RexFlags::clear_w(),
+                                _ => rex
+                            }
+                        } else {
+                            rex
+                        };
+
                         // GCC/llvm use the swapped operand encoding (viz., the R/RM vs RM/R
                         // duality). Do this too, so as to be able to compare generated machine
                         // code easily.
                         emit_std_reg_reg(
                             sink,
-                            LegacyPrefixes::None,
+                            prefix,
                             opcode_r,
                             1,
                             reg_e,
@@ -222,7 +254,7 @@ pub(crate) fn emit(
                         // Here we revert to the "normal" G-E ordering.
                         emit_std_reg_mem(
                             sink,
-                            LegacyPrefixes::None,
+                            prefix,
                             opcode_m,
                             1,
                             reg_g,
@@ -233,13 +265,18 @@ pub(crate) fn emit(
                     }
 
                     RegMemImm::Imm { simm32 } => {
-                        let use_imm8 = low8_will_sign_extend_to_32(simm32);
+                        let use_imm8 = if size.to_bits() == 8 {
+                            false
+                        } else {
+                            low8_will_sign_extend_to_32(simm32)
+                        };
+
                         let opcode = if use_imm8 { 0x83 } else { 0x81 };
                         // And also here we use the "normal" G-E ordering.
                         let enc_g = int_reg_enc(reg_g);
                         emit_std_enc_enc(
                             sink,
-                            LegacyPrefixes::None,
+                            prefix,
                             opcode,
                             1,
                             subopcode_i,
@@ -261,7 +298,6 @@ pub(crate) fn emit(
             let src2 = allocs.next(src2.to_reg());
             let src1_dst = src1_dst.finalize(state, sink).with_allocs(allocs);
 
-            assert!(*size == OperandSize::Size32 || *size == OperandSize::Size64);
             let opcode = match op {
                 AluRmiROpcode::Add => 0x01,
                 AluRmiROpcode::Sub => 0x29,
@@ -270,15 +306,38 @@ pub(crate) fn emit(
                 AluRmiROpcode::Xor => 0x31,
                 _ => panic!("Unsupported read-modify-write ALU opcode"),
             };
+
+            let prefix = if *size == OperandSize::Size16 {
+                LegacyPrefixes::_66
+            } else {
+                LegacyPrefixes::None
+            };
+            let opcode = if *size == OperandSize::Size8 {
+                opcode - 1
+            } else {
+                opcode
+            };
+
+            let rex = RexFlags::from(*size);
+            let rex = if *size == OperandSize::Size8 {
+                debug_assert!(src2.is_real());
+                match src2.to_real_reg().unwrap().hw_enc() {
+                    regs::ENC_RBP | regs::ENC_RSP | regs::ENC_RDI | regs::ENC_RSI => RexFlags::clear_w(),
+                    _ => rex
+                }
+            } else {
+                rex
+            };
+
             let enc_g = int_reg_enc(src2);
             emit_std_enc_mem(
                 sink,
-                LegacyPrefixes::None,
+                prefix,
                 opcode,
                 1,
                 enc_g,
                 &src1_dst,
-                RexFlags::from(*size),
+                rex,
                 0,
             );
         }

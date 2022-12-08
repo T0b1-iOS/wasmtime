@@ -201,7 +201,8 @@ impl LowerBackend for S390xBackend {
             | Opcode::DynamicStackLoad
             | Opcode::DynamicStackStore
             | Opcode::DynamicStackAddr
-            | Opcode::ExtractVector => {
+            | Opcode::ExtractVector
+            | Opcode::UaddOverflow => {
                 unreachable!(
                     "TODO: not yet implemented in ISLE: inst = `{}`, type = `{:?}`",
                     ctx.dfg().display_inst(ir_inst),
