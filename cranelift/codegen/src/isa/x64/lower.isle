@@ -153,6 +153,47 @@
         (output_pair (value_regs_get results 0)
                      (value_regs_get results 1))))
 
+;;;; Rules for `usub_overflow` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(rule (lower (usub_overflow x y @ (value_type (fits_in_64 ty))))
+      (let ((results ValueRegs (with_flags (x64_alurmi_with_flags_paired (AluRmiROpcode.Sub) ty x y)
+                                           (x64_setcc_paired (CC.B)))))
+        (output_pair (value_regs_get results 0)
+                     (value_regs_get results 1))))
+
+;;;; Rules for `ssub_overflow` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(rule (lower (ssub_overflow x y @ (value_type (fits_in_64 ty))))
+      (let ((results ValueRegs (with_flags (x64_alurmi_with_flags_paired (AluRmiROpcode.Sub) ty x y)
+                                           (x64_setcc_paired (CC.O)))))
+        (output_pair (value_regs_get results 0)
+                     (value_regs_get results 1))))
+
+;;;; Rules for `umul_overflow` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(rule (lower (umul_overflow x y @ (value_type (fits_in_64 ty))))
+      (let ((results ValueRegs (with_flags (x64_umullo_with_flags_paired ty x y)
+                                           (x64_setcc_paired (CC.O)))))
+        (output_pair (value_regs_get results 0)
+                     (value_regs_get results 1))))
+
+;; TODO: fold memory operand if possible
+
+;; TODO: would better codegen for the i8 case be this?
+;; movzx a16, a8
+;; movzx b16, b8
+;; imul a16, b16
+;; cmp a16, 0xFF
+;; seta r8 
+
+;;;; Rules for `smul_overflow` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(rule (lower (smul_overflow x y @ (value_type (fits_in_64 ty))))
+      (let ((results ValueRegs (with_flags (x64_alurmi_with_flags_paired (AluRmiROpcode.Mul) ty x y)
+                                           (x64_setcc_paired (CC.O)))))
+        (output_pair (value_regs_get results 0)
+                     (value_regs_get results 1))))
+
 ;;;; Rules for `sadd_sat` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (rule (lower (has_type (multi_lane 8 16)

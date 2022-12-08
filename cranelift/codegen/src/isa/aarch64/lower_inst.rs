@@ -292,7 +292,9 @@ pub(crate) fn lower_insn_to_regs(
         Opcode::UaddOverflow
         | Opcode::SaddOverflow
         | Opcode::UsubOverflow
-        | Opcode::SsubOverflow => {
+        | Opcode::SsubOverflow
+        | Opcode::UmulOverflow
+        | Opcode::SmulOverflow => {
             panic!("*overflow ops not implemented");
         }
 

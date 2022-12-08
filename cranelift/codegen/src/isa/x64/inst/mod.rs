@@ -97,6 +97,7 @@ impl Inst {
             | Inst::MovsxRmR { .. }
             | Inst::MovzxRmR { .. }
             | Inst::MulHi { .. }
+            | Inst::UMulLo { .. }
             | Inst::Neg { .. }
             | Inst::Not { .. }
             | Inst::Nop { .. }
@@ -840,6 +841,24 @@ impl PrettyPrint for Inst {
                     src2,
                     dst_lo,
                     dst_hi,
+                )
+            }
+
+            Inst::UMulLo {
+                size,
+                src1,
+                src2,
+                dst,
+            } => {
+                let src1 = pretty_print_reg(src1.to_reg(), size.to_bytes(), allocs);
+                let dst = pretty_print_reg(dst.to_reg().to_reg(), size.to_bytes(), allocs);
+                let src2 = src2.pretty_print(size.to_bytes(), allocs);
+                format!(
+                    "{} {}, {}, {}",
+                    ljustify2("mul".to_string(), suffix_bwlq(*size)),
+                    src1,
+                    src2,
+                    dst,
                 )
             }
 
@@ -1711,14 +1730,20 @@ fn x64_get_operands<F: Fn(VReg) -> VReg>(inst: &Inst, collector: &mut OperandCol
     // method above.
     match inst {
         Inst::AluRmiR {
-            size, src1, src2, dst, ..
+            size, op, src1, src2, dst, ..
         } => {
-            if inst.produces_const() {
-                collector.reg_def(dst.to_writable_reg());
-            } else {
-                collector.reg_use(src1.to_reg());
-                collector.reg_reuse_def(dst.to_writable_reg(), 0);
+            if *size == OperandSize::Size8 && *op == AluRmiROpcode::Mul {
+                collector.reg_fixed_use(src1.to_reg(), regs::rax());
+                collector.reg_fixed_def(dst.to_writable_reg(), regs::rax());
                 src2.get_operands(collector);
+            } else {
+                if inst.produces_const() {
+                    collector.reg_def(dst.to_writable_reg());
+                } else {
+                    collector.reg_use(src1.to_reg());
+                    collector.reg_reuse_def(dst.to_writable_reg(), 0);
+                    src2.get_operands(collector);
+                }
             }
         }
         Inst::AluRM { src1_dst, src2, .. } => {
@@ -1760,6 +1785,20 @@ fn x64_get_operands<F: Fn(VReg) -> VReg>(inst: &Inst, collector: &mut OperandCol
             collector.reg_fixed_use(src1.to_reg(), regs::rax());
             collector.reg_fixed_def(dst_lo.to_writable_reg(), regs::rax());
             collector.reg_fixed_def(dst_hi.to_writable_reg(), regs::rdx());
+            src2.get_operands(collector);
+        }
+        Inst::UMulLo {
+            size,
+            src1,
+            src2,
+            dst,
+            ..
+        } => {
+            collector.reg_fixed_use(src1.to_reg(), regs::rax());
+            collector.reg_fixed_def(dst.to_writable_reg(), regs::rax());
+            if *size != OperandSize::Size8 {
+                collector.reg_clobbers(PRegSet::empty().with(regs::gpr_preg(regs::ENC_RDX)));
+            }
             src2.get_operands(collector);
         }
         Inst::CheckedDivOrRemSeq {

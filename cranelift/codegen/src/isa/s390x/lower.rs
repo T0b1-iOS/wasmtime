@@ -205,7 +205,9 @@ impl LowerBackend for S390xBackend {
             | Opcode::UaddOverflow
             | Opcode::SaddOverflow
             | Opcode::UsubOverflow
-            | Opcode::SsubOverflow => {
+            | Opcode::SsubOverflow
+            | Opcode::UmulOverflow
+            | Opcode::SmulOverflow => {
                 unreachable!(
                     "TODO: not yet implemented in ISLE: inst = `{}`, type = `{:?}`",
                     ctx.dfg().display_inst(ir_inst),
