@@ -706,7 +706,7 @@ impl PrettyPrint for Inst {
                 let dst = pretty_print_reg(dst.to_reg().to_reg(), size.to_bytes(), allocs);
                 format!(
                     "{} {}, {}, {}",
-                    ljustify2(op.to_string(), suffix_lqb(*size)),
+                    ljustify2(op.to_string(), suffix_bwlq(*size)),
                     dst,
                     dst,
                     dst
@@ -725,7 +725,7 @@ impl PrettyPrint for Inst {
                 let src2 = src2.pretty_print(size_bytes, allocs);
                 format!(
                     "{} {}, {}, {}",
-                    ljustify2(op.to_string(), suffix_lqb(*size)),
+                    ljustify2(op.to_string(), suffix_bwlq(*size)),
                     src1,
                     src2,
                     dst
@@ -742,7 +742,7 @@ impl PrettyPrint for Inst {
                 let src1_dst = src1_dst.pretty_print(size_bytes, allocs);
                 format!(
                     "{} {}, {}",
-                    ljustify2(op.to_string(), suffix_lqb(*size)),
+                    ljustify2(op.to_string(), suffix_bwlq(*size)),
                     src2,
                     src1_dst,
                 )

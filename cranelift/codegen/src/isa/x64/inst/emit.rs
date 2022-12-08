@@ -157,8 +157,15 @@ pub(crate) fn emit(
                 let src2 = src2.clone().to_reg_mem_imm().with_allocs(allocs);
                 (reg_g, src2)
             };
+            println!("REGG: {:?} {}", reg_g, reg_g.to_real_reg().unwrap().hw_enc());
+            match *size {
+                OperandSize::Size8 => println!("OpSize8"),
+                OperandSize::Size16 => println!("OpSize16"),
+                OperandSize::Size32 => println!("OpSize32"),
+                OperandSize::Size64 => println!("OpSize64"),
+            }
 
-            let rex = RexFlags::from(*size);
+            let mut rex = RexFlags::from(*size);
             if *op == AluRmiROpcode::Mul {
                 // We kinda freeloaded Mul into RMI_R_Op, but it doesn't fit the usual pattern, so
                 // we have to special-case it.
@@ -213,27 +220,18 @@ pub(crate) fn emit(
                     (opcode_r, opcode_m)
                 };
 
-                let rex = if size.to_bits() == 8 {
+                if size.to_bits() == 8 {
                     debug_assert!(reg_g.is_real());
-                    match reg_g.to_real_reg().unwrap().hw_enc() {
-                        regs::ENC_RBP | regs::ENC_RSP | regs::ENC_RDI | regs::ENC_RSI => RexFlags::clear_w(),
-                        _ => rex
-                    }
-                } else {
-                    rex
-                };
+                    rex.always_emit_if_8bit_needed(reg_g);
+                }
 
                 match src2 {
                     RegMemImm::Reg { reg: reg_e } => {
-                        let rex = if size.to_bits() == 8 {
+                        println!("REGE: {:?} {}", reg_e, reg_e.to_real_reg().unwrap().hw_enc());
+                        if size.to_bits() == 8 {
                             debug_assert!(reg_e.is_real());
-                            match reg_e.to_real_reg().unwrap().hw_enc() {
-                                regs::ENC_RBP | regs::ENC_RSP | regs::ENC_RDI | regs::ENC_RSI => RexFlags::clear_w(),
-                                _ => rex
-                            }
-                        } else {
-                            rex
-                        };
+                            rex.always_emit_if_8bit_needed(reg_e);
+                        }
 
                         // GCC/llvm use the swapped operand encoding (viz., the R/RM vs RM/R
                         // duality). Do this too, so as to be able to compare generated machine

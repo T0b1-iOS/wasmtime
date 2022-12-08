@@ -1751,6 +1751,29 @@
                         dst)
          dst)))
 
+(decl x64_alurmi_with_flags_paired (AluRmiROpcode Type Gpr GprMemImm) ProducesFlags)
+(rule (x64_alurmi_with_flags_paired opc (fits_in_64 ty) src1 src2)
+      (let ((dst WritableGpr (temp_writable_gpr)))
+        (ProducesFlags.ProducesFlagsReturnsResultWithConsumer
+         (MInst.AluRmiR (raw_operand_size_of_type ty)
+                        opc
+                        src1
+                        src2
+                        dst)
+         dst)))
+
+;; ConsumesFlagsTwiceReturnsValueRegs
+;;(decl x64_alurmi_with_flags_consume_twice (ConsumesFlags ConsumesFlags) ConsumesFlags)
+;;(rule (x64_alurmi_with_flags_consume_twice 
+;;            (ConsumesFlags.ConsumesFlagsReturnsResultWithProducer inst1 reg1)
+;;            (ConsumesFlags.ConsumesFlagsReturnsResultWithProducer inst2 reg2)
+;;      )
+;;      (ConsumesFlags.ConsumesFlagsTwiceReturnsValueRegs
+;;            inst1
+;;            inst2
+;;            (value_regs reg1 reg2))
+;;)
+
 ;; Helper for creating `adc` instructions.
 (decl x64_adc_paired (Type Gpr GprMemImm) ConsumesFlags)
 (rule (x64_adc_paired ty src1 src2)
