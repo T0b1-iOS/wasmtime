@@ -709,8 +709,6 @@ where
             let lhs = arg(0)?.convert(ValueConversionKind::ToUnsigned)?;
             let rhs = arg(1)?.convert(ValueConversionKind::ToUnsigned)?;
             let (mut sum, carry) = lhs.overflowing_add(rhs)?;
-            // the test cases fail with smth like `run: %uaddof_i8(0, 0) == 0, actual: 0` if this is not done like this
-            // and for i128 it's completely broken
             sum = sum.convert(ValueConversionKind::ToSigned)?;
             assign_multiple(&[sum, Value::bool(carry, false, types::I8)?])
         }
@@ -725,8 +723,6 @@ where
             let lhs = arg(0)?.convert(ValueConversionKind::ToUnsigned)?;
             let rhs = arg(1)?.convert(ValueConversionKind::ToUnsigned)?;
             let (mut sum, carry) = lhs.overflowing_sub(rhs)?;
-            // the test cases fail with smth like `run: %uaddof_i8(0, 0) == 0, actual: 0` if this is not done like this
-            // and for i128 it's completely broken
             sum = sum.convert(ValueConversionKind::ToSigned)?;
             assign_multiple(&[sum, Value::bool(carry, false, types::I8)?])
         }
@@ -735,6 +731,20 @@ where
             let lhs = arg(0)?.convert(ValueConversionKind::ToSigned)?;
             let rhs = arg(1)?.convert(ValueConversionKind::ToSigned)?;
             let (sum, carry) = lhs.overflowing_sub(rhs)?;
+            assign_multiple(&[sum, Value::bool(carry, false, types::I8)?])
+        }
+        Opcode::UmulOverflow => {
+            let lhs = arg(0)?.convert(ValueConversionKind::ToUnsigned)?;
+            let rhs = arg(1)?.convert(ValueConversionKind::ToUnsigned)?;
+            let (mut sum, carry) = lhs.overflowing_mul(rhs)?;
+            sum = sum.convert(ValueConversionKind::ToSigned)?;
+            assign_multiple(&[sum, Value::bool(carry, false, types::I8)?])
+        }
+        Opcode::SmulOverflow => {
+            let ty = arg(0)?.ty();
+            let lhs = arg(0)?.convert(ValueConversionKind::ToSigned)?;
+            let rhs = arg(1)?.convert(ValueConversionKind::ToSigned)?;
+            let (sum, carry) = lhs.overflowing_mul(rhs)?;
             assign_multiple(&[sum, Value::bool(carry, false, types::I8)?])
         }
         Opcode::UaddOverflowTrap => {

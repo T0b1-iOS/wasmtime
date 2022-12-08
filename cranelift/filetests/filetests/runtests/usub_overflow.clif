@@ -1,4 +1,6 @@
 test interpret
+test run
+target x86_64
 
 function %usubof_i64(i64, i64) -> i64 {
 block0(v0: i64,v1: i64):
@@ -21,16 +23,16 @@ block0(v0: i64,v1: i64):
     v2, v3 = usub_overflow v0, v1
     return v3
 }
-; run: %usubof_i64(0, 0) == 0
-; run: %usubof_i64(0, 1) == 1
-; run: %usubof_i64(-1, 0) == 0
-; run: %usubof_i64(-1, 1) == 0
-; run: %usubof_i64(-1, -2) == 1
-; run: %usubof_i64(0x7FFFFFFF_FFFFFFFF, 0x7FFFFFFF_FFFFFFFF) == 0
-; run: %usubof_i64(0x7FFFFFFF_FFFFFFFF, 0x80000000_00000000) == 1
-; run: %usubof_i64(0x7FFFFFFF_FFFFFFFF, 0x80000000_00000001) == 1
-; run: %usubof_i64(0x01234567_89ABCDEF, 0xFEDCBA98_76543210) == 1
-; run: %usubof_i64(0xFEDCBA98_76543220, 0x01234567_89ABCDEF) == 0
+; run: %usubof_i64b(0, 0) == 0
+; run: %usubof_i64b(0, 1) == 1
+; run: %usubof_i64b(-1, 0) == 0
+; run: %usubof_i64b(-1, 1) == 0
+; run: %usubof_i64b(-1, -2) == 0
+; run: %usubof_i64b(0x7FFFFFFF_FFFFFFFF, 0x7FFFFFFF_FFFFFFFF) == 0
+; run: %usubof_i64b(0x7FFFFFFF_FFFFFFFF, 0x80000000_00000000) == 1
+; run: %usubof_i64b(0x7FFFFFFF_FFFFFFFF, 0x80000000_00000001) == 1
+; run: %usubof_i64b(0x01234567_89ABCDEF, 0xFEDCBA98_76543210) == 1
+; run: %usubof_i64b(0xFEDCBA98_76543220, 0x01234567_89ABCDEF) == 0
 
 function %usubof_i8(i8, i8) -> i8 {
 block0(v0: i8, v1: i8):
@@ -51,8 +53,8 @@ block0(v0: i8, v1: i8):
 ; run: %usubof_i8b(0, 1) == 1
 ; run: %usubof_i8b(100, 20) == 0
 ; run: %usubof_i8b(100, -20) == 1
-; run: %usubof_i8b(128, -128) == 1
-; run: %usubof_i8b(-128, -128) == 1
+; run: %usubof_i8b(127, -128) == 1
+; run: %usubof_i8b(0x80, 0x80) == 0
 ; run: %usubof_i8b(0xFF, 0xFF) == 0
 ; run: %usubof_i8b(0xFE, 0xFF) == 1
 

@@ -157,43 +157,80 @@ pub(crate) fn emit(
                 let src2 = src2.clone().to_reg_mem_imm().with_allocs(allocs);
                 (reg_g, src2)
             };
-            println!("REGG: {:?} {}", reg_g, reg_g.to_real_reg().unwrap().hw_enc());
-            match *size {
-                OperandSize::Size8 => println!("OpSize8"),
-                OperandSize::Size16 => println!("OpSize16"),
-                OperandSize::Size32 => println!("OpSize32"),
-                OperandSize::Size64 => println!("OpSize64"),
-            }
+
+            let prefix = if *size == OperandSize::Size16 {
+                LegacyPrefixes::_66
+            } else {
+                LegacyPrefixes::None
+            };
 
             let mut rex = RexFlags::from(*size);
+
             if *op == AluRmiROpcode::Mul {
                 // We kinda freeloaded Mul into RMI_R_Op, but it doesn't fit the usual pattern, so
                 // we have to special-case it.
-                match src2 {
-                    RegMemImm::Reg { reg: reg_e } => {
-                        emit_std_reg_reg(sink, LegacyPrefixes::None, 0x0FAF, 2, reg_g, reg_e, rex);
-                    }
 
-                    RegMemImm::Mem { addr } => {
-                        let amode = addr.finalize(state, sink);
-                        emit_std_reg_mem(
-                            sink,
-                            LegacyPrefixes::None,
-                            0x0FAF,
-                            2,
-                            reg_g,
-                            &amode,
-                            rex,
-                            0,
-                        );
-                    }
+                if *size == OperandSize::Size8 {
+                    match src2 {
+                        RegMemImm::Reg { reg: reg_e } => {
+                            debug_assert!(reg_e.is_real());
+                            rex.always_emit_if_8bit_needed(reg_e);
+                            let enc_e = int_reg_enc(reg_e);
+                            emit_std_enc_enc(
+                                sink,
+                                LegacyPrefixes::None,
+                                0xF6,
+                                1,
+                                5,
+                                enc_e,
+                                rex);
+                        }
 
-                    RegMemImm::Imm { simm32 } => {
-                        let use_imm8 = low8_will_sign_extend_to_32(simm32);
-                        let opcode = if use_imm8 { 0x6B } else { 0x69 };
-                        // Yes, really, reg_g twice.
-                        emit_std_reg_reg(sink, LegacyPrefixes::None, opcode, 1, reg_g, reg_g, rex);
-                        emit_simm(sink, if use_imm8 { 1 } else { 4 }, simm32);
+                        RegMemImm::Mem { addr } => {
+                            let amode = addr.finalize(state, sink);
+                            emit_std_enc_mem(
+                                sink,
+                                LegacyPrefixes::None,
+                                0xF6,
+                                1,
+                                5,
+                                &amode,
+                                rex,
+                                0,
+                            );
+                        }
+
+                        RegMemImm::Imm { .. } => {
+                            panic!("Cannot emit 8bit imul with 8bit immediate");
+                        }
+                    }
+                } else {
+                    match src2 {
+                        RegMemImm::Reg { reg: reg_e } => {
+                            emit_std_reg_reg(sink, prefix, 0x0FAF, 2, reg_g, reg_e, rex);
+                        }
+    
+                        RegMemImm::Mem { addr } => {
+                            let amode = addr.finalize(state, sink);
+                            emit_std_reg_mem(
+                                sink,
+                                LegacyPrefixes::None,
+                                0x0FAF,
+                                2,
+                                reg_g,
+                                &amode,
+                                rex,
+                                0,
+                            );
+                        }
+    
+                        RegMemImm::Imm { simm32 } => {
+                            let use_imm8 = low8_will_sign_extend_to_32(simm32);
+                            let opcode = if use_imm8 { 0x6B } else { 0x69 };
+                            // Yes, really, reg_g twice.
+                            emit_std_reg_reg(sink, LegacyPrefixes::None, opcode, 1, reg_g, reg_g, rex);
+                            emit_simm(sink, if use_imm8 { 1 } else { 4 }, simm32);
+                        }
                     }
                 }
             } else {
@@ -208,27 +245,20 @@ pub(crate) fn emit(
                     AluRmiROpcode::Mul => panic!("unreachable"),
                 };
 
-                let prefix = if size.to_bits() == 16 {
-                    LegacyPrefixes::_66
-                } else {
-                    LegacyPrefixes::None
-                };
-
                 let (opcode_r, opcode_m) = if size.to_bits() == 8 {
                     (opcode_r - 1, opcode_m - 1)
                 } else {
                     (opcode_r, opcode_m)
                 };
 
-                if size.to_bits() == 8 {
+                if *size == OperandSize::Size8 {
                     debug_assert!(reg_g.is_real());
                     rex.always_emit_if_8bit_needed(reg_g);
                 }
 
                 match src2 {
                     RegMemImm::Reg { reg: reg_e } => {
-                        println!("REGE: {:?} {}", reg_e, reg_e.to_real_reg().unwrap().hw_enc());
-                        if size.to_bits() == 8 {
+                        if *size == OperandSize::Size8 {
                             debug_assert!(reg_e.is_real());
                             rex.always_emit_if_8bit_needed(reg_e);
                         }
@@ -503,6 +533,45 @@ pub(crate) fn emit(
                 RegMem::Mem { addr: src } => {
                     let amode = src.finalize(state, sink).with_allocs(allocs);
                     emit_std_enc_mem(sink, prefix, 0xF7, 1, subopcode, &amode, rex_flags, 0);
+                }
+            }
+        }
+
+        Inst::UMulLo {
+            size,
+            src1,
+            src2,
+            dst,
+        } => {
+            let src1 = allocs.next(src1.to_reg());
+            let dst = allocs.next(dst.to_reg().to_reg());
+            debug_assert_eq!(src1, regs::rax());
+            debug_assert_eq!(dst, regs::rax());
+
+            let mut rex_flags = RexFlags::from(*size);
+            let prefix = match size {
+                OperandSize::Size16 => LegacyPrefixes::_66,
+                _ => LegacyPrefixes::None
+            };
+
+            let opcode = if *size == OperandSize::Size8 {
+                0xF6
+            } else {
+                0xF7
+            };
+
+            match src2.clone().to_reg_mem() {
+                RegMem::Reg { reg } => {
+                    let reg = allocs.next(reg);
+                    if *size == OperandSize::Size8 {
+                        rex_flags.always_emit_if_8bit_needed(reg);
+                    }
+                    let reg_e = int_reg_enc(reg);
+                    emit_std_enc_enc(sink, prefix, opcode, 1, 4, reg_e, rex_flags);
+                }
+                RegMem::Mem { addr: src } => {
+                    let amode = src.finalize(state, sink).with_allocs(allocs);
+                    emit_std_enc_mem(sink, prefix, opcode, 1, 4, &amode, rex_flags, 0);
                 }
             }
         }

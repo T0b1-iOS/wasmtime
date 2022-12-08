@@ -59,6 +59,7 @@ pub trait Value: Clone + From<DataValue> {
     fn checked_add(self, other: Self) -> ValueResult<Option<Self>>;
     fn overflowing_add(self, other: Self) -> ValueResult<(Self, bool)>;
     fn overflowing_sub(self, other: Self) -> ValueResult<(Self, bool)>;
+    fn overflowing_mul(self, other: Self) -> ValueResult<(Self, bool)>;
 
     // Float operations
     fn neg(self) -> ValueResult<Self>;
@@ -193,6 +194,15 @@ macro_rules! binary_match {
     ( option $op:ident($arg1:expr, $arg2:expr); [ $( $data_value_ty:ident ),* ] ) => {
         match ($arg1, $arg2) {
             $( (DataValue::$data_value_ty(a), DataValue::$data_value_ty(b)) => { Ok(a.$op(*b).map(DataValue::$data_value_ty)) } )*
+            _ => unimplemented!()
+        }
+    };
+    ( pair $op:ident($arg1:expr, $arg2:expr); [ $( $data_value_ty:ident ),* ] ) => {
+        match ($arg1, $arg2) {
+            $( (DataValue::$data_value_ty(a), DataValue::$data_value_ty(b)) => { 
+                let (f, s) = a.$op(*b);
+                Ok((DataValue::$data_value_ty(f), s))
+            } )*
             _ => unimplemented!()
         }
     };
@@ -631,95 +641,15 @@ impl Value for DataValue {
     }
 
     fn overflowing_add(self, other: Self) -> ValueResult<(Self, bool)> {
-        match (self, other) {
-            (DataValue::I8(a), DataValue::I8(b)) => {
-                let (r, c) = a.overflowing_add(b);
-                Ok((DataValue::I8(r), c))
-            },
-            (DataValue::U8(a), DataValue::U8(b)) => {
-                let (r, c) = a.overflowing_add(b);
-                Ok((DataValue::U8(r), c))
-            },
-            (DataValue::I16(a), DataValue::I16(b)) => {
-                let (r, c) = a.overflowing_add(b);
-                Ok((DataValue::I16(r), c))
-            },
-            (DataValue::U16(a), DataValue::U16(b)) => {
-                let (r, c) = a.overflowing_add(b);
-                Ok((DataValue::U16(r), c))
-            },
-            (DataValue::I32(a), DataValue::I32(b)) => {
-                let (r, c) = a.overflowing_add(b);
-                Ok((DataValue::I32(r), c))
-            },
-            (DataValue::U32(a), DataValue::U32(b)) => {
-                let (r, c) = a.overflowing_add(b);
-                Ok((DataValue::U32(r), c))
-            },
-            (DataValue::I64(a), DataValue::I64(b)) => {
-                let (r, c) = a.overflowing_add(b);
-                Ok((DataValue::I64(r), c))
-            },
-            (DataValue::U64(a), DataValue::U64(b)) => {
-                let (r, c) = a.overflowing_add(b);
-                Ok((DataValue::U64(r), c))
-            },
-            (DataValue::I128(a), DataValue::I128(b)) => {
-                let (r, c) = a.overflowing_add(b);
-                Ok((DataValue::I128(r), c))
-            },
-            (DataValue::U128(a), DataValue::U128(b)) => {
-                let (r, c) = a.overflowing_add(b);
-                Ok((DataValue::U128(r), c))
-            },
-            (_a, b) => Err(ValueError::InvalidType(ValueTypeClass::Integer, b.ty()))
-        }
+        binary_match!(pair overflowing_add(&self, &other); [I8, I16, I32, I64, I128, U8, U16, U32, U64, U128])
     }
 
     fn overflowing_sub(self, other: Self) -> ValueResult<(Self, bool)> {
-        match (self, other) {
-            (DataValue::I8(a), DataValue::I8(b)) => {
-                let (r, c) = a.overflowing_sub(b);
-                Ok((DataValue::I8(r), c))
-            },
-            (DataValue::U8(a), DataValue::U8(b)) => {
-                let (r, c) = a.overflowing_sub(b);
-                Ok((DataValue::U8(r), c))
-            },
-            (DataValue::I16(a), DataValue::I16(b)) => {
-                let (r, c) = a.overflowing_sub(b);
-                Ok((DataValue::I16(r), c))
-            },
-            (DataValue::U16(a), DataValue::U16(b)) => {
-                let (r, c) = a.overflowing_sub(b);
-                Ok((DataValue::U16(r), c))
-            },
-            (DataValue::I32(a), DataValue::I32(b)) => {
-                let (r, c) = a.overflowing_sub(b);
-                Ok((DataValue::I32(r), c))
-            },
-            (DataValue::U32(a), DataValue::U32(b)) => {
-                let (r, c) = a.overflowing_sub(b);
-                Ok((DataValue::U32(r), c))
-            },
-            (DataValue::I64(a), DataValue::I64(b)) => {
-                let (r, c) = a.overflowing_sub(b);
-                Ok((DataValue::I64(r), c))
-            },
-            (DataValue::U64(a), DataValue::U64(b)) => {
-                let (r, c) = a.overflowing_sub(b);
-                Ok((DataValue::U64(r), c))
-            },
-            (DataValue::I128(a), DataValue::I128(b)) => {
-                let (r, c) = a.overflowing_sub(b);
-                Ok((DataValue::I128(r), c))
-            },
-            (DataValue::U128(a), DataValue::U128(b)) => {
-                let (r, c) = a.overflowing_sub(b);
-                Ok((DataValue::U128(r), c))
-            },
-            (_a, b) => Err(ValueError::InvalidType(ValueTypeClass::Integer, b.ty()))
-        }
+        binary_match!(pair overflowing_sub(&self, &other); [I8, I16, I32, I64, I128, U8, U16, U32, U64, U128])
+    }
+
+    fn overflowing_mul(self, other: Self) -> ValueResult<(Self, bool)> {
+        binary_match!(pair overflowing_mul(&self, &other); [I8, I16, I32, I64, I128, U8, U16, U32, U64, U128])
     }
 
     fn neg(self) -> ValueResult<Self> {
