@@ -1971,6 +1971,163 @@ pub(crate) fn define(
         );
     }
 
+    let of_out = &Operand::new("of", i8).with_doc("Overflow flag");
+    ig.push(
+        Inst::new(
+            "uadd_overflow",
+            r#"
+        Add integers unsigned with carry out.
+
+        Same as `iadd_cout`.
+
+        ```text
+            a &= x + y \pmod 2^B \\
+            of &= x+y >= 2^B
+        ```
+
+        Polymorphic over all scalar integer types, but does not support vector
+        types.
+        "#,
+            &formats.binary,
+        )
+        .operands_in(vec![x, y])
+        .operands_out(vec![a, of_out]),
+    );
+
+    /*ig.push(
+        Inst::new(
+            "sadd_overflow",
+            r#"
+        Add integers signed with overflow out.
+        ``of`` is set when the addition over- or underflowed.
+
+        Polymorphic over all scalar integer types, but does not support vector
+        types.
+        "#,
+            &formats.binary,
+        )
+        .operands_in(vec![x, y])
+        .operands_out(vec![a, of_out]),
+    );
+
+    ig.push(
+        Inst::new(
+            "usub_overflow",
+            r#"
+        Subtract integers unsigned with overflow out.
+
+        Same as `isub_bout`.
+
+        ```text
+            a &= x - y \pmod 2^B \\
+            of &= x - y < 0
+        ```
+
+        Polymorphic over all scalar integer types, but does not support vector
+        types.
+        "#,
+            &formats.binary,
+        )
+        .operands_in(vec![x, y])
+        .operands_out(vec![a, of_out]),
+    );
+
+    ig.push(
+        Inst::new(
+            "ssub_overflow",
+            r#"
+        Subtract integers signed with overflow out.
+        ``of`` is set when the subtraction over- or underflowed.
+
+        Polymorphic over all scalar integer types, but does not support vector
+        types.
+        "#,
+            &formats.binary,
+        )
+        .operands_in(vec![x, y])
+        .operands_out(vec![a, of_out]),
+    );
+
+    ig.push(
+        Inst::new(
+            "umul_overflow",
+            r#"
+        Multiply integers unsigned with overflow out.
+
+        ```text
+            a &= x * y \pmod 2^B \\
+            of &= x * y > 2^B
+        ```
+
+        Polymorphic over all scalar integer types, but does not support vector
+        types.
+        "#,
+            &formats.binary,
+        )
+        .operands_in(vec![x, y])
+        .operands_out(vec![a, of_out]),
+    );
+
+    ig.push(
+        Inst::new(
+            "smul_overflow",
+            r#"
+        Multiply integers signed with overflow out.
+        ``of`` is set when the multiplication over- or underflowed.
+
+        Polymorphic over all scalar integer types, but does not support vector
+        types.
+        "#,
+            &formats.binary,
+        )
+        .operands_in(vec![x, y])
+        .operands_out(vec![a, of_out]),
+    );
+
+    {
+        let x = &Operand::new("x", NarrowInt);
+        let y = &Operand::new("y", NarrowInt);
+        let lo = &Operand::new("lo", NarrowInt);
+        let hi = &Operand::new("hi", NarrowInt);
+        ig.push(
+            Inst::new(
+                "umullohi",
+                r#"
+            Multiply integers unsigned with low and high out.
+
+            ```text
+                lo &= x * y \pmod 2^B \\
+                hi &= x * y & (-1 << B) \\
+            ```
+
+            Supports scalar integer types up to 64 bit.
+            "#,
+                &formats.binary,
+            )
+            .operands_in(vec![x, y])
+            .operands_out(vec![lo, hi]),
+        );
+
+        ig.push(
+            Inst::new(
+                "smullohi",
+                r#"
+            Multiply integers signed with low and high out.
+
+            ```text
+                lo &= x * y \pmod 2^B \\
+                hi &= x * y & (-1 << B) \\
+            ```
+
+            Supports scalar integer types up to 64 bit.
+            "#,
+                &formats.binary,
+            )
+            .operands_in(vec![x, y])
+            .operands_out(vec![lo, hi]),
+        );
+    }*/
+
     ig.push(
         Inst::new(
             "isub_bin",

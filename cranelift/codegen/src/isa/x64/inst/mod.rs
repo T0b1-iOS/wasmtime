@@ -1740,7 +1740,7 @@ fn x64_get_operands<F: Fn(VReg) -> VReg>(inst: &Inst, collector: &mut OperandCol
     // method above.
     match inst {
         Inst::AluRmiR {
-            src1, src2, dst, ..
+            size, src1, src2, dst, ..
         } => {
             if inst.produces_const() {
                 collector.reg_def(dst.to_writable_reg());

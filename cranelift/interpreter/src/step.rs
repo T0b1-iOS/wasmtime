@@ -705,6 +705,17 @@ where
 
             assign_multiple(&[sum, Value::bool(carry, false, types::I8)?])
         }
+        Opcode::UaddOverflow => {
+            let ty = arg(0)?.ty();
+            let lhs = arg(0)?.convert(ValueConversionKind::ToUnsigned)?;
+            let rhs = arg(1)?.convert(ValueConversionKind::ToUnsigned)?;
+            let (sum, carry) = lhs.overflowing_add(rhs)?;
+            let sum = match ty {
+                types::I8 | types::I16 | types::I32 | types::I64 | types::I128 => sum.convert(ValueConversionKind::ToSigned)?,
+                _ => sum
+            };
+            assign_multiple(&[sum, Value::bool(carry, false, types::I8)?])
+        }
         Opcode::UaddOverflowTrap => {
             let sum = Value::add(arg(0)?, arg(1)?)?;
             let carry = Value::lt(&sum, &arg(0)?)? && Value::lt(&sum, &arg(1)?)?;
