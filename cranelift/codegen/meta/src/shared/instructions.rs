@@ -2229,7 +2229,7 @@ pub(crate) fn define(
         .operands_out(vec![a, of_out]),
     );
 
-    /*ig.push(
+    ig.push(
         Inst::new(
             "sadd_overflow",
             r#"
@@ -2283,7 +2283,7 @@ pub(crate) fn define(
         .operands_out(vec![a, of_out]),
     );
 
-    ig.push(
+    /*ig.push(
         Inst::new(
             "umul_overflow",
             r#"

@@ -289,7 +289,10 @@ pub(crate) fn lower_insn_to_regs(
             panic!("ALU+imm and ALU+carry ops should not appear here!");
         }
 
-        Opcode::UaddOverflow => {
+        Opcode::UaddOverflow
+        | Opcode::SaddOverflow
+        | Opcode::UsubOverflow
+        | Opcode::SsubOverflow => {
             panic!("*overflow ops not implemented");
         }
 

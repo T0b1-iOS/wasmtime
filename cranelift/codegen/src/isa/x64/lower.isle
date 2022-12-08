@@ -115,6 +115,44 @@
         (output_pair (value_regs_get results 0)
                      (value_regs_get results 1))))
 
+;;;; Rules for `uadd_overflow` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(rule (lower (uadd_overflow x y @ (value_type (fits_in_64 ty))))
+      (let ((results ValueRegs (with_flags (x64_alurmi_with_flags_paired (AluRmiROpcode.Add) ty x y)
+                                           (x64_setcc_paired (CC.B)))))
+        (output_pair (value_regs_get results 0)
+                     (value_regs_get results 1))))
+
+;;(decl with_flags_consumer (ProducesFlags ConsumesFlags) Reg)
+;;(rule (with_flags_consumer p c)
+;;      (let ((v ValueRegs (with_flags p c)))
+;;        (value_regs_get v 1)))
+
+;; i128 gets lowered into adc and add
+;;(rule (lower (has_type $I128 (uadd_overflow x y)))
+;;      ;; Get the high/low registers for `x`.
+;;      (let ((x_regs ValueRegs x)
+;;            (x_lo Gpr (value_regs_get_gpr x_regs 0))
+;;            (x_hi Gpr (value_regs_get_gpr x_regs 1)))
+;;        ;; Get the high/low registers for `y`.
+;;        (let ((y_regs ValueRegs y)
+;;              (y_lo Gpr (value_regs_get_gpr y_regs 0))
+;;              (y_hi Gpr (value_regs_get_gpr y_regs 1)))
+;;          ;; Do an add followed by an add-with-carry.
+;;          (let ((results ValueRegs (with_flags (with_flags_consumer (x64_alurmi_with_flags_paired (AluRmiROpcode.Add) $I64 x_lo y_lo)
+;;                                                     (x64_alurmi_with_flags_paired (AluRmiROpcode.Adc) $I64 x_hi y_hi))
+;;                               (x64_setcc_paired (CC.B)))))
+;;            (output_pair (value_regs_get results 0)
+;;                         (value_regs_get results 1))))))
+
+;;;; Rules for `sadd_overflow` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(rule (lower (sadd_overflow x y @ (value_type (fits_in_64 ty))))
+      (let ((results ValueRegs (with_flags (x64_alurmi_with_flags_paired (AluRmiROpcode.Add) ty x y)
+                                           (x64_setcc_paired (CC.O)))))
+        (output_pair (value_regs_get results 0)
+                     (value_regs_get results 1))))
+
 ;;;; Rules for `sadd_sat` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (rule (lower (has_type (multi_lane 8 16)

@@ -1,4 +1,6 @@
 test interpret
+test run
+target x86_64
 
 function %uaddof_i64(i64, i64) -> i64 {
 block0(v0: i64,v1: i64):
@@ -99,3 +101,4 @@ block0(v0: i32, v1: i32):
 ; run: %uaddof_i32b(100, 28) == 0
 ; run: %uaddof_i32b(3000000000, 1294967295) == 0
 ; run: %uaddof_i32b(3000000000, 1294967296) == 1
+

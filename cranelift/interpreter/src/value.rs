@@ -58,6 +58,7 @@ pub trait Value: Clone + From<DataValue> {
     fn abs(self) -> ValueResult<Self>;
     fn checked_add(self, other: Self) -> ValueResult<Option<Self>>;
     fn overflowing_add(self, other: Self) -> ValueResult<(Self, bool)>;
+    fn overflowing_sub(self, other: Self) -> ValueResult<(Self, bool)>;
 
     // Float operations
     fn neg(self) -> ValueResult<Self>;
@@ -435,6 +436,11 @@ impl Value for DataValue {
                 DataValue::I32(n) => DataValue::U32(n as u32),
                 DataValue::I64(n) => DataValue::U64(n as u64),
                 DataValue::I128(n) => DataValue::U128(n as u128),
+                DataValue::U8(_) => self,
+                DataValue::U16(_) => self,
+                DataValue::U32(_) => self,
+                DataValue::U64(_) => self,
+                DataValue::U128(_) => self,
                 _ => unimplemented!("conversion: {} -> {:?}", self.ty(), kind),
             },
             ValueConversionKind::ToSigned => match self {
@@ -443,6 +449,11 @@ impl Value for DataValue {
                 DataValue::U32(n) => DataValue::I32(n as i32),
                 DataValue::U64(n) => DataValue::I64(n as i64),
                 DataValue::U128(n) => DataValue::I128(n as i128),
+                DataValue::I8(_) => self,
+                DataValue::I16(_) => self,
+                DataValue::I32(_) => self,
+                DataValue::I64(_) => self,
+                DataValue::I128(_) => self,
                 _ => unimplemented!("conversion: {} -> {:?}", self.ty(), kind),
             },
             ValueConversionKind::RoundNearestEven(ty) => match (self, ty) {
@@ -661,7 +672,53 @@ impl Value for DataValue {
                 let (r, c) = a.overflowing_add(b);
                 Ok((DataValue::U128(r), c))
             },
-            (a, b) => Err(ValueError::InvalidType(ValueTypeClass::Integer, b.ty()))
+            (_a, b) => Err(ValueError::InvalidType(ValueTypeClass::Integer, b.ty()))
+        }
+    }
+
+    fn overflowing_sub(self, other: Self) -> ValueResult<(Self, bool)> {
+        match (self, other) {
+            (DataValue::I8(a), DataValue::I8(b)) => {
+                let (r, c) = a.overflowing_sub(b);
+                Ok((DataValue::I8(r), c))
+            },
+            (DataValue::U8(a), DataValue::U8(b)) => {
+                let (r, c) = a.overflowing_sub(b);
+                Ok((DataValue::U8(r), c))
+            },
+            (DataValue::I16(a), DataValue::I16(b)) => {
+                let (r, c) = a.overflowing_sub(b);
+                Ok((DataValue::I16(r), c))
+            },
+            (DataValue::U16(a), DataValue::U16(b)) => {
+                let (r, c) = a.overflowing_sub(b);
+                Ok((DataValue::U16(r), c))
+            },
+            (DataValue::I32(a), DataValue::I32(b)) => {
+                let (r, c) = a.overflowing_sub(b);
+                Ok((DataValue::I32(r), c))
+            },
+            (DataValue::U32(a), DataValue::U32(b)) => {
+                let (r, c) = a.overflowing_sub(b);
+                Ok((DataValue::U32(r), c))
+            },
+            (DataValue::I64(a), DataValue::I64(b)) => {
+                let (r, c) = a.overflowing_sub(b);
+                Ok((DataValue::I64(r), c))
+            },
+            (DataValue::U64(a), DataValue::U64(b)) => {
+                let (r, c) = a.overflowing_sub(b);
+                Ok((DataValue::U64(r), c))
+            },
+            (DataValue::I128(a), DataValue::I128(b)) => {
+                let (r, c) = a.overflowing_sub(b);
+                Ok((DataValue::I128(r), c))
+            },
+            (DataValue::U128(a), DataValue::U128(b)) => {
+                let (r, c) = a.overflowing_sub(b);
+                Ok((DataValue::U128(r), c))
+            },
+            (_a, b) => Err(ValueError::InvalidType(ValueTypeClass::Integer, b.ty()))
         }
     }
 
