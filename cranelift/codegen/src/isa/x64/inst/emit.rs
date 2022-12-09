@@ -176,14 +176,7 @@ pub(crate) fn emit(
                             debug_assert!(reg_e.is_real());
                             rex.always_emit_if_8bit_needed(reg_e);
                             let enc_e = int_reg_enc(reg_e);
-                            emit_std_enc_enc(
-                                sink,
-                                LegacyPrefixes::None,
-                                0xF6,
-                                1,
-                                5,
-                                enc_e,
-                                rex);
+                            emit_std_enc_enc(sink, LegacyPrefixes::None, 0xF6, 1, 5, enc_e, rex);
                         }
 
                         RegMemImm::Mem { addr } => {
@@ -209,26 +202,17 @@ pub(crate) fn emit(
                         RegMemImm::Reg { reg: reg_e } => {
                             emit_std_reg_reg(sink, prefix, 0x0FAF, 2, reg_g, reg_e, rex);
                         }
-    
+
                         RegMemImm::Mem { addr } => {
                             let amode = addr.finalize(state, sink);
-                            emit_std_reg_mem(
-                                sink,
-                                LegacyPrefixes::None,
-                                0x0FAF,
-                                2,
-                                reg_g,
-                                &amode,
-                                rex,
-                                0,
-                            );
+                            emit_std_reg_mem(sink, prefix, 0x0FAF, 2, reg_g, &amode, rex, 0);
                         }
-    
+
                         RegMemImm::Imm { simm32 } => {
                             let use_imm8 = low8_will_sign_extend_to_32(simm32);
                             let opcode = if use_imm8 { 0x6B } else { 0x69 };
                             // Yes, really, reg_g twice.
-                            emit_std_reg_reg(sink, LegacyPrefixes::None, opcode, 1, reg_g, reg_g, rex);
+                            emit_std_reg_reg(sink, prefix, opcode, 1, reg_g, reg_g, rex);
                             emit_simm(sink, if use_imm8 { 1 } else { 4 }, simm32);
                         }
                     }
@@ -266,30 +250,13 @@ pub(crate) fn emit(
                         // GCC/llvm use the swapped operand encoding (viz., the R/RM vs RM/R
                         // duality). Do this too, so as to be able to compare generated machine
                         // code easily.
-                        emit_std_reg_reg(
-                            sink,
-                            prefix,
-                            opcode_r,
-                            1,
-                            reg_e,
-                            reg_g,
-                            rex,
-                        );
+                        emit_std_reg_reg(sink, prefix, opcode_r, 1, reg_e, reg_g, rex);
                     }
 
                     RegMemImm::Mem { addr } => {
                         let amode = addr.finalize(state, sink);
                         // Here we revert to the "normal" G-E ordering.
-                        emit_std_reg_mem(
-                            sink,
-                            prefix,
-                            opcode_m,
-                            1,
-                            reg_g,
-                            &amode,
-                            rex,
-                            0,
-                        );
+                        emit_std_reg_mem(sink, prefix, opcode_m, 1, reg_g, &amode, rex, 0);
                     }
 
                     RegMemImm::Imm { simm32 } => {
@@ -307,22 +274,14 @@ pub(crate) fn emit(
 
                         let opcode = if *size == OperandSize::Size8 {
                             0x80
-                        } else if low8_will_sign_extend_to_32(simm32) { 
-                            0x83 
+                        } else if low8_will_sign_extend_to_32(simm32) {
+                            0x83
                         } else {
-                            0x81 
+                            0x81
                         };
                         // And also here we use the "normal" G-E ordering.
                         let enc_g = int_reg_enc(reg_g);
-                        emit_std_enc_enc(
-                            sink,
-                            prefix,
-                            opcode,
-                            1,
-                            subopcode_i,
-                            enc_g,
-                            rex,
-                        );
+                        emit_std_enc_enc(sink, prefix, opcode, 1, subopcode_i, enc_g, rex);
                         emit_simm(sink, imm_size, simm32);
                     }
                 }
@@ -362,24 +321,17 @@ pub(crate) fn emit(
             let rex = if *size == OperandSize::Size8 {
                 debug_assert!(src2.is_real());
                 match src2.to_real_reg().unwrap().hw_enc() {
-                    regs::ENC_RBP | regs::ENC_RSP | regs::ENC_RDI | regs::ENC_RSI => RexFlags::clear_w(),
-                    _ => rex
+                    regs::ENC_RBP | regs::ENC_RSP | regs::ENC_RDI | regs::ENC_RSI => {
+                        RexFlags::clear_w()
+                    }
+                    _ => rex,
                 }
             } else {
                 rex
             };
 
             let enc_g = int_reg_enc(src2);
-            emit_std_enc_mem(
-                sink,
-                prefix,
-                opcode,
-                1,
-                enc_g,
-                &src1_dst,
-                rex,
-                0,
-            );
+            emit_std_enc_mem(sink, prefix, opcode, 1, enc_g, &src1_dst, rex, 0);
         }
 
         Inst::UnaryRmR { size, op, src, dst } => {
@@ -563,7 +515,7 @@ pub(crate) fn emit(
             let mut rex_flags = RexFlags::from(*size);
             let prefix = match size {
                 OperandSize::Size16 => LegacyPrefixes::_66,
-                _ => LegacyPrefixes::None
+                _ => LegacyPrefixes::None,
             };
 
             let opcode = if *size == OperandSize::Size8 {

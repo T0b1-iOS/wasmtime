@@ -188,8 +188,39 @@
 
 ;;;; Rules for `smul_overflow` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(rule (lower (smul_overflow x y @ (value_type (fits_in_64 ty))))
-      (let ((results ValueRegs (with_flags (x64_alurmi_with_flags_paired (AluRmiROpcode.Mul) ty x y)
+;; (rule (lower (smul_overflow x y @ (value_type (fits_in_64 ty))))
+;;       (let ((results ValueRegs (with_flags (x64_alurmi_with_flags_paired (AluRmiROpcode.Mul) ty x y)
+;;                                            (x64_setcc_paired (CC.O)))))
+;;         (output_pair (value_regs_get results 0)
+;;                      (value_regs_get results 1))))
+
+(rule (lower (smul_overflow x y @ (value_type $I64)))
+      (let ((results ValueRegs (with_flags (x64_alurmi_with_flags_paired (AluRmiROpcode.Mul) $I64 x y)
+                                           (x64_setcc_paired (CC.O)))))
+        (output_pair (value_regs_get results 0)
+                     (value_regs_get results 1))))
+
+(rule (lower (smul_overflow x y @ (value_type $I32)))
+      (let ((results ValueRegs (with_flags (x64_alurmi_with_flags_paired (AluRmiROpcode.Mul) $I32 x y)
+                                           (x64_setcc_paired (CC.O)))))
+        (output_pair (value_regs_get results 0)
+                     (value_regs_get results 1))))
+
+(rule (lower (smul_overflow x y @ (value_type $I16)))
+      (let ((results ValueRegs (with_flags (x64_alurmi_with_flags_paired (AluRmiROpcode.Mul) $I16 x y)
+                                           (x64_setcc_paired (CC.O)))))
+        (output_pair (value_regs_get results 0)
+                     (value_regs_get results 1))))
+
+;; (rule (lower (smul_overflow x y @ (value_type $I8)))
+;;       (let ((results ValueRegs (with_flags (x64_alurmi_with_flags_paired (AluRmiROpcode.Mul) $I8 x (reg_mem_to_reg_mem_imm (put_in_reg_mem y)))
+;;                                            (x64_setcc_paired (CC.O)))))
+;;         (output_pair (value_regs_get results 0)
+;;                      (value_regs_get results 1))))
+
+;; TODO: use put_in_reg_mem here but that puts the imm in a const pool and idk if that's better
+(rule (lower (smul_overflow x y @ (value_type $I8)))
+      (let ((results ValueRegs (with_flags (x64_alurmi_with_flags_paired (AluRmiROpcode.Mul) $I8 x (RegMemImm.Reg (put_in_reg y)))
                                            (x64_setcc_paired (CC.O)))))
         (output_pair (value_regs_get results 0)
                      (value_regs_get results 1))))
