@@ -293,15 +293,21 @@ pub(crate) fn emit(
                     }
 
                     RegMemImm::Imm { simm32 } => {
-                        let use_imm8 = if *size == OperandSize::Size8 {
-                            true
+                        let imm_size = if *size == OperandSize::Size8 {
+                            1
+                        } else if *size == OperandSize::Size16 {
+                            2
                         } else {
-                            low8_will_sign_extend_to_32(simm32)
+                            if low8_will_sign_extend_to_32(simm32) {
+                                1
+                            } else {
+                                4
+                            }
                         };
 
                         let opcode = if *size == OperandSize::Size8 {
                             0x80
-                        } else if use_imm8 { 
+                        } else if low8_will_sign_extend_to_32(simm32) { 
                             0x83 
                         } else {
                             0x81 
@@ -317,7 +323,7 @@ pub(crate) fn emit(
                             enc_g,
                             rex,
                         );
-                        emit_simm(sink, if use_imm8 { 1 } else { 4 }, simm32);
+                        emit_simm(sink, imm_size, simm32);
                     }
                 }
             }
