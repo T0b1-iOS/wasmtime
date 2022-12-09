@@ -209,11 +209,28 @@ pub(crate) fn emit(
                         }
 
                         RegMemImm::Imm { simm32 } => {
-                            let use_imm8 = low8_will_sign_extend_to_32(simm32);
-                            let opcode = if use_imm8 { 0x6B } else { 0x69 };
+                            let imm_size = if *size == OperandSize::Size8 {
+                                1
+                            } else {
+                                if low8_will_sign_extend_to_32(simm32) {
+                                    1
+                                } else {
+                                    if *size == OperandSize::Size16 {
+                                        2
+                                    } else {
+                                        4
+                                    }
+                                }
+                            };
+
+                            let opcode = if low8_will_sign_extend_to_32(simm32) {
+                                0x6B
+                            } else {
+                                0x69
+                            };
                             // Yes, really, reg_g twice.
                             emit_std_reg_reg(sink, prefix, opcode, 1, reg_g, reg_g, rex);
-                            emit_simm(sink, if use_imm8 { 1 } else { 4 }, simm32);
+                            emit_simm(sink, imm_size, simm32);
                         }
                     }
                 }
