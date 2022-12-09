@@ -2084,7 +2084,7 @@ pub(crate) fn define(
         .operands_out(vec![a, of_out]),
     );
 
-    /*{
+    {
         let x = &Operand::new("x", NarrowInt);
         let y = &Operand::new("y", NarrowInt);
         let lo = &Operand::new("lo", NarrowInt);
@@ -2126,7 +2126,7 @@ pub(crate) fn define(
             .operands_in(vec![x, y])
             .operands_out(vec![lo, hi]),
         );
-    }*/
+    }
 
     ig.push(
         Inst::new(
