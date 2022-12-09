@@ -1,0 +1,75 @@
+test interpret
+test run
+target x86_64
+
+function %umullohi_i16lo(i16, i16) -> i16 {
+block0(v0: i16,v1: i16):
+    v2, v3 = umullohi v0, v1
+    return v2
+}
+
+; run: %umullohi_i16lo(0, 0) == 0
+; run: %umullohi_i16lo(0, 1) == 0
+; run: %umullohi_i16lo(1, -1) == -1
+; run: %umullohi_i16lo(2, 2) == 4
+; run: %umullohi_i16lo(0x7FFF, 0x7FFF) == 1
+; run: %umullohi_i16lo(0x8000, 0x7FFF) == 0x8000
+; run: %umullohi_i16lo(0x0123, 0xFEDC) == 0xB414
+; run: %umullohi_i16lo(0xC0FF, 0xDECA) == 0x6B36
+
+function %umullohi_i16hi(i16, i16) -> i16 {
+block0(v0: i16,v1: i16):
+    v2, v3 = umullohi v0, v1
+    return v3
+}
+
+; run: %umullohi_i16hi(2, 4) == 0
+; run: %umullohi_i16hi(65535, 65535) == 65534
+
+function %umullohi_i32lo(i32, i32) -> i32 {
+block0(v0: i32,v1: i32):
+    v2, v3 = umullohi v0, v1
+    return v2
+}
+
+; run: %umullohi_i32lo(0, 0) == 0
+; run: %umullohi_i32lo(0, 1) == 0
+; run: %umullohi_i32lo(1, -1) == -1
+; run: %umullohi_i32lo(2, 2) == 4
+; run: %umullohi_i32lo(0x7FFFFFFF, 0x7FFFFFFF) == 1
+; run: %umullohi_i32lo(0x80000000, 0x7FFFFFFF) == 0x80000000
+; run: %umullohi_i32lo(0x01234567, 0xFEDCBA98) == 0x23E20B28
+; run: %umullohi_i32lo(0xC0FFEEEE, 0xDECAFFFF) == 0x19BA1112
+
+function %umullohi_i32hi(i32, i32) -> i32 {
+block0(v0: i32,v1: i32):
+    v2, v3 = umullohi v0, v1
+    return v3
+}
+
+; run: %umullohi_i32hi(500, 700) == 0
+; run: %umullohi_i32hi(4294967295, 4294967295) == 4294967294
+
+function %umullohi_i64lo(i64, i64) -> i64 {
+block0(v0: i64,v1: i64):
+    v2, v3 = umullohi v0, v1
+    return v2
+}
+
+; run: %umullohi_i64lo(0, 0) == 0
+; run: %umullohi_i64lo(0, 1) == 0
+; run: %umullohi_i64lo(1, -1) == -1
+; run: %umullohi_i64lo(2, 2) == 4
+; run: %umullohi_i64lo(0x7FFFFFFF_FFFFFFFF, 0x7FFFFFFF_FFFFFFFF) == 1
+; run: %umullohi_i64lo(0x80000000_00000000, 0x7FFFFFFF_FFFFFFFF) == 0x80000000_00000000
+; run: %umullohi_i64lo(0x01234567_89ABCDEF, 0xFEDCBA98_76543210) == 0x2236D88F_E5618CF0
+; run: %umullohi_i64lo(0xC0FFEEEE_C0FFEEEE, 0xDECAFFFF_DECAFFFF) == 0xDB6B1E48_19BA1112
+
+function %umullohi_i64hi(i64, i64) -> i64 {
+block0(v0: i64,v1: i64):
+    v2, v3 = umullohi v0, v1
+    return v3
+}
+
+; run: %umullohi_i64hi(4294967295, 4294967295) == 0
+; run: %umullohi_i64hi(18446744073709551615, 18446744073709551615) == 18446744073709551614

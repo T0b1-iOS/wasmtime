@@ -344,6 +344,8 @@ fn lower_insn_to_regs(
         | Opcode::SsubOverflow
         | Opcode::UmulOverflow
         | Opcode::SmulOverflow
+        | Opcode::Umullohi
+        | Opcode::Smullohi
         | Opcode::AvgRound
         | Opcode::Band
         | Opcode::Bor
