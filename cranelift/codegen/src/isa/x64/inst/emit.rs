@@ -294,7 +294,7 @@ pub(crate) fn emit(
 
                     RegMemImm::Imm { simm32 } => {
                         let use_imm8 = if *size == OperandSize::Size8 {
-                            false
+                            true
                         } else {
                             low8_will_sign_extend_to_32(simm32)
                         };
