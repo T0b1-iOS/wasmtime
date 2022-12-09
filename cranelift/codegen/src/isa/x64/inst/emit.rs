@@ -293,13 +293,19 @@ pub(crate) fn emit(
                     }
 
                     RegMemImm::Imm { simm32 } => {
-                        let use_imm8 = if size.to_bits() == 8 {
+                        let use_imm8 = if *size == OperandSize::Size8 {
                             false
                         } else {
                             low8_will_sign_extend_to_32(simm32)
                         };
 
-                        let opcode = if use_imm8 { 0x83 } else { 0x81 };
+                        let opcode = if *size == OperandSize::Size8 {
+                            0x80
+                        } else if use_imm8 { 
+                            0x83 
+                        } else {
+                            0x81 
+                        };
                         // And also here we use the "normal" G-E ordering.
                         let enc_g = int_reg_enc(reg_g);
                         emit_std_enc_enc(
