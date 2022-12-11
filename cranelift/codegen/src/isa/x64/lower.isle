@@ -117,8 +117,8 @@
 
 ;;;; Helpers for `*_overflow` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(decl construct_overflow_op (Type CC ProducesFlags) InstOutput)
-(rule (construct_overflow_op ty cc inst)
+(decl construct_overflow_op (CC ProducesFlags) InstOutput)
+(rule (construct_overflow_op cc inst)
       (let ((results ValueRegs (with_flags inst
                                            (x64_setcc_paired cc))))
         (output_pair (value_regs_get results 0)
@@ -126,7 +126,7 @@
 
 (decl construct_overflow_op_alu (Type CC AluRmiROpcode Gpr GprMemImm) InstOutput)
 (rule (construct_overflow_op_alu ty cc alu_op src1 src2)
-      (construct_overflow_op ty cc (x64_alurmi_with_flags_paired alu_op ty src1 src2)))
+      (construct_overflow_op cc (x64_alurmi_with_flags_paired alu_op ty src1 src2)))
 
 ;; This essentially creates
 ;; alu_<op1> x_lo, y_lo
@@ -188,7 +188,7 @@
 ;;;; Rules for `umul_overflow` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (rule 2 (lower (umul_overflow x y @ (value_type (fits_in_64 ty))))
-      (construct_overflow_op ty (CC.O) (x64_umullo_with_flags_paired ty x y)))
+      (construct_overflow_op (CC.O) (x64_umullo_with_flags_paired ty x y)))
 
 ;;;; Rules for `smul_overflow` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -196,8 +196,8 @@
       (construct_overflow_op_alu ty (CC.O) (AluRmiROpcode.Mul) x y))
 
 ;; TODO: used put_in_reg_mem here but that puts the imm in a const pool and idk if that's better
-(rule 1 (lower (smul_overflow x y @ (value_type (ty_16_32_or_64 ty))))
-      (construct_overflow_op ty (CC.O) (x64_alurmi_with_flags_paired (AluRmiROpcode.Mul) $I8 x (RegMemImm.Reg (put_in_reg y)))))
+(rule 1 (lower (smul_overflow x y @ (value_type $I8)))
+      (construct_overflow_op (CC.O) (x64_alurmi_with_flags_paired (AluRmiROpcode.Mul) $I8 x (RegMemImm.Reg (put_in_reg y)))))
 
 ;;;; Rules for `umullohi` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
