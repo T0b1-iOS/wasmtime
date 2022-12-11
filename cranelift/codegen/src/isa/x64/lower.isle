@@ -115,152 +115,102 @@
         (output_pair (value_regs_get results 0)
                      (value_regs_get results 1))))
 
-;;;; Rules for `uadd_overflow` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; Helpers for `*_overflow` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(rule (lower (uadd_overflow x y @ (value_type (fits_in_64 ty))))
-      (let ((results ValueRegs (with_flags (x64_alurmi_with_flags_paired (AluRmiROpcode.Add) ty x y)
-                                           (x64_setcc_paired (CC.B)))))
+(decl construct_overflow_op (Type CC ProducesFlags) InstOutput)
+(rule (construct_overflow_op ty cc inst)
+      (let ((results ValueRegs (with_flags inst
+                                           (x64_setcc_paired cc))))
         (output_pair (value_regs_get results 0)
                      (value_regs_get results 1))))
 
-;;(decl with_flags_consumer (ProducesFlags ConsumesFlags) Reg)
-;;(rule (with_flags_consumer p c)
-;;      (let ((v ValueRegs (with_flags p c)))
-;;        (value_regs_get v 1)))
+(decl construct_overflow_op_alu (Type CC AluRmiROpcode Gpr GprMemImm) InstOutput)
+(rule (construct_overflow_op_alu ty cc alu_op src1 src2)
+      (construct_overflow_op ty cc (x64_alurmi_with_flags_paired alu_op ty src1 src2)))
+
+;; This essentially creates
+;; alu_<op1> x_lo, y_lo
+;; alu_<op2> x_hi, y_hi
+;; set<cc> r8
+(decl construct_overflow_op_alu_128 (CC AluRmiROpcode AluRmiROpcode Value Value) InstOutput)
+(rule (construct_overflow_op_alu_128 cc op1 op2 x y)
+      ;; Get the high/low registers for `x`.
+      (let ((x_regs ValueRegs x)
+            (x_lo Gpr (value_regs_get_gpr x_regs 0))
+            (x_hi Gpr (value_regs_get_gpr x_regs 1)))
+        ;; Get the high/low registers for `y`.
+        (let ((y_regs ValueRegs y)
+              (y_lo Gpr (value_regs_get_gpr y_regs 0))
+              (y_hi Gpr (value_regs_get_gpr y_regs 1)))
+          (let    ((lo Gpr (alu_rmi_r $I64 op1 x_lo y_lo))
+                   (hi Gpr (alu_rmi_r $I64 op2 x_hi y_hi))
+                   (of WritableGpr (let ((dst WritableGpr (temp_writable_gpr))
+                              (_ Unit (emit (MInst.Setcc cc dst))))
+                              dst
+                   )))
+                  (output_pair      (value_regs   (gpr_to_reg lo)
+                                                (gpr_to_reg hi))
+                                    (writable_reg_to_reg (writable_gpr_to_reg of)))))))
+
+;;;; Rules for `uadd_overflow` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(rule 1 (lower (uadd_overflow x y @ (value_type (fits_in_64 ty))))
+      (construct_overflow_op_alu ty (CC.B) (AluRmiROpcode.Add) x y))
 
 ;; i128 gets lowered into adc and add
-;;(rule (lower (has_type $I128 (uadd_overflow x y)))
-;;      ;; Get the high/low registers for `x`.
-;;      (let ((x_regs ValueRegs x)
-;;            (x_lo Gpr (value_regs_get_gpr x_regs 0))
-;;            (x_hi Gpr (value_regs_get_gpr x_regs 1)))
-;;        ;; Get the high/low registers for `y`.
-;;        (let ((y_regs ValueRegs y)
-;;              (y_lo Gpr (value_regs_get_gpr y_regs 0))
-;;              (y_hi Gpr (value_regs_get_gpr y_regs 1)))
-;;          ;; Do an add followed by an add-with-carry.
-;;          (let ((results ValueRegs (with_flags (with_flags_consumer (x64_alurmi_with_flags_paired (AluRmiROpcode.Add) $I64 x_lo y_lo)
-;;                                                     (x64_alurmi_with_flags_paired (AluRmiROpcode.Adc) $I64 x_hi y_hi))
-;;                               (x64_setcc_paired (CC.B)))))
-;;            (output_pair (value_regs_get results 0)
-;;                         (value_regs_get results 1))))))
+(rule 0 (lower (uadd_overflow x y @ (value_type $I128)))
+        (construct_overflow_op_alu_128 (CC.B) (AluRmiROpcode.Add) (AluRmiROpcode.Adc) x y))
 
 ;;;; Rules for `sadd_overflow` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(rule (lower (sadd_overflow x y @ (value_type (fits_in_64 ty))))
-      (let ((results ValueRegs (with_flags (x64_alurmi_with_flags_paired (AluRmiROpcode.Add) ty x y)
-                                           (x64_setcc_paired (CC.O)))))
-        (output_pair (value_regs_get results 0)
-                     (value_regs_get results 1))))
+(rule 1 (lower (sadd_overflow x y @ (value_type (fits_in_64 ty))))
+      (construct_overflow_op_alu ty (CC.O) (AluRmiROpcode.Add) x y))
+
+(rule 0 (lower (sadd_overflow x y @ (value_type $I128)))
+        (construct_overflow_op_alu_128 (CC.O) (AluRmiROpcode.Add) (AluRmiROpcode.Adc) x y))
 
 ;;;; Rules for `usub_overflow` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(rule (lower (usub_overflow x y @ (value_type (fits_in_64 ty))))
-      (let ((results ValueRegs (with_flags (x64_alurmi_with_flags_paired (AluRmiROpcode.Sub) ty x y)
-                                           (x64_setcc_paired (CC.B)))))
-        (output_pair (value_regs_get results 0)
-                     (value_regs_get results 1))))
+(rule 1 (lower (usub_overflow x y @ (value_type (fits_in_64 ty))))
+      (construct_overflow_op_alu ty (CC.B) (AluRmiROpcode.Sub) x y))
+
+(rule 0 (lower (usub_overflow x y @ (value_type $I128)))
+        (construct_overflow_op_alu_128 (CC.B) (AluRmiROpcode.Sub) (AluRmiROpcode.Sbb) x y))
 
 ;;;; Rules for `ssub_overflow` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(rule (lower (ssub_overflow x y @ (value_type (fits_in_64 ty))))
-      (let ((results ValueRegs (with_flags (x64_alurmi_with_flags_paired (AluRmiROpcode.Sub) ty x y)
-                                           (x64_setcc_paired (CC.O)))))
-        (output_pair (value_regs_get results 0)
-                     (value_regs_get results 1))))
+(rule 1 (lower (ssub_overflow x y @ (value_type (fits_in_64 ty))))
+      (construct_overflow_op_alu ty (CC.O) (AluRmiROpcode.Sub) x y))
+
+(rule 0 (lower (ssub_overflow x y @ (value_type $I128)))
+        (construct_overflow_op_alu_128 (CC.O) (AluRmiROpcode.Sub) (AluRmiROpcode.Sbb) x y))
 
 ;;;; Rules for `umul_overflow` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(rule (lower (umul_overflow x y @ (value_type (fits_in_64 ty))))
-      (let ((results ValueRegs (with_flags (x64_umullo_with_flags_paired ty x y)
-                                           (x64_setcc_paired (CC.O)))))
-        (output_pair (value_regs_get results 0)
-                     (value_regs_get results 1))))
-
-;; TODO: fold memory operand if possible
-
-;; TODO: would better codegen for the i8 case be this?
-;; movzx a16, a8
-;; movzx b16, b8
-;; imul a16, b16
-;; cmp a16, 0xFF
-;; seta r8 
+(rule 2 (lower (umul_overflow x y @ (value_type (fits_in_64 ty))))
+      (construct_overflow_op ty (CC.O) (x64_umullo_with_flags_paired ty x y)))
 
 ;;;; Rules for `smul_overflow` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; (rule (lower (smul_overflow x y @ (value_type (fits_in_64 ty))))
-;;       (let ((results ValueRegs (with_flags (x64_alurmi_with_flags_paired (AluRmiROpcode.Mul) ty x y)
-;;                                            (x64_setcc_paired (CC.O)))))
-;;         (output_pair (value_regs_get results 0)
-;;                      (value_regs_get results 1))))
+(rule 2 (lower (usub_overflow x y @ (value_type (ty_16_32_or_64 ty))))
+      (construct_overflow_op_alu ty (CC.O) (AluRmiROpcode.Mul) x y))
 
-(rule (lower (smul_overflow x y @ (value_type $I64)))
-      (let ((results ValueRegs (with_flags (x64_alurmi_with_flags_paired (AluRmiROpcode.Mul) $I64 x y)
-                                           (x64_setcc_paired (CC.O)))))
-        (output_pair (value_regs_get results 0)
-                     (value_regs_get results 1))))
-
-(rule (lower (smul_overflow x y @ (value_type $I32)))
-      (let ((results ValueRegs (with_flags (x64_alurmi_with_flags_paired (AluRmiROpcode.Mul) $I32 x y)
-                                           (x64_setcc_paired (CC.O)))))
-        (output_pair (value_regs_get results 0)
-                     (value_regs_get results 1))))
-
-(rule (lower (smul_overflow x y @ (value_type $I16)))
-      (let ((results ValueRegs (with_flags (x64_alurmi_with_flags_paired (AluRmiROpcode.Mul) $I16 x y)
-                                           (x64_setcc_paired (CC.O)))))
-        (output_pair (value_regs_get results 0)
-                     (value_regs_get results 1))))
-
-;; (rule (lower (smul_overflow x y @ (value_type $I8)))
-;;       (let ((results ValueRegs (with_flags (x64_alurmi_with_flags_paired (AluRmiROpcode.Mul) $I8 x (reg_mem_to_reg_mem_imm (put_in_reg_mem y)))
-;;                                            (x64_setcc_paired (CC.O)))))
-;;         (output_pair (value_regs_get results 0)
-;;                      (value_regs_get results 1))))
-
-;; TODO: use put_in_reg_mem here but that puts the imm in a const pool and idk if that's better
-(rule (lower (smul_overflow x y @ (value_type $I8)))
-      (let ((results ValueRegs (with_flags (x64_alurmi_with_flags_paired (AluRmiROpcode.Mul) $I8 x (RegMemImm.Reg (put_in_reg y)))
-                                           (x64_setcc_paired (CC.O)))))
-        (output_pair (value_regs_get results 0)
-                     (value_regs_get results 1))))
+;; TODO: used put_in_reg_mem here but that puts the imm in a const pool and idk if that's better
+(rule 1 (lower (umul_overflow x y @ (value_type (ty_16_32_or_64 ty))))
+      (construct_overflow_op ty (CC.O) (x64_alurmi_with_flags_paired (AluRmiROpcode.Mul) $I8 x (RegMemImm.Reg (put_in_reg y)))))
 
 ;;;; Rules for `umullohi` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(rule (lower (umullohi x y @ (value_type $I16)))
-      (let  ((results ValueRegs (mul_hi $I16 $false x y)))
-            (output_pair      (value_regs_get results 0)
-                              (value_regs_get results 1))
-      ))
-
-(rule (lower (umullohi x y @ (value_type $I32)))
-      (let  ((results ValueRegs (mul_hi $I32 $false x y)))
-            (output_pair      (value_regs_get results 0)
-                              (value_regs_get results 1))
-      ))
-
-(rule (lower (umullohi x y @ (value_type $I64)))
-      (let  ((results ValueRegs (mul_hi $I64 $false x y)))
+(rule (lower (umullohi x y @ (value_type (ty_16_32_or_64 ty))))
+      (let  ((results ValueRegs (mul_hi ty $false x y)))
             (output_pair      (value_regs_get results 0)
                               (value_regs_get results 1))
       ))
 
 ;;;; Rules for `smullohi` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(rule (lower (smullohi x y @ (value_type $I16)))
-      (let  ((results ValueRegs (mul_hi $I16 $true x y)))
-            (output_pair      (value_regs_get results 0)
-                              (value_regs_get results 1))
-      ))
-
-(rule (lower (smullohi x y @ (value_type $I32)))
-      (let  ((results ValueRegs (mul_hi $I32 $true x y)))
-            (output_pair      (value_regs_get results 0)
-                              (value_regs_get results 1))
-      ))
-
-(rule (lower (smullohi x y @ (value_type $I64)))
-      (let  ((results ValueRegs (mul_hi $I64 $true x y)))
+(rule (lower (smullohi x y @ (value_type (ty_16_32_or_64 ty))))
+      (let  ((results ValueRegs (mul_hi ty $true x y)))
             (output_pair      (value_regs_get results 0)
                               (value_regs_get results 1))
       ))
