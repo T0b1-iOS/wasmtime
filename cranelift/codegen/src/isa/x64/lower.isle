@@ -192,11 +192,11 @@
 
 ;;;; Rules for `smul_overflow` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(rule 2 (lower (usub_overflow x y @ (value_type (ty_16_32_or_64 ty))))
+(rule 2 (lower (smul_overflow x y @ (value_type (ty_16_32_or_64 ty))))
       (construct_overflow_op_alu ty (CC.O) (AluRmiROpcode.Mul) x y))
 
 ;; TODO: used put_in_reg_mem here but that puts the imm in a const pool and idk if that's better
-(rule 1 (lower (umul_overflow x y @ (value_type (ty_16_32_or_64 ty))))
+(rule 1 (lower (smul_overflow x y @ (value_type (ty_16_32_or_64 ty))))
       (construct_overflow_op ty (CC.O) (x64_alurmi_with_flags_paired (AluRmiROpcode.Mul) $I8 x (RegMemImm.Reg (put_in_reg y)))))
 
 ;;;; Rules for `umullohi` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
