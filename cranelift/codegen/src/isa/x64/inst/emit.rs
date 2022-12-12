@@ -147,7 +147,8 @@ pub(crate) fn emit(
             src2,
             dst: reg_g,
         } => {
-            state.last_alu_op = Some(sink.cur_offset());
+            let code_off = sink.cur_offset();
+            state.last_alu_op = Some(code_off);
             let (reg_g, src2) = if inst.produces_const() {
                 let reg_g = allocs.next(reg_g.to_reg().to_reg());
                 (reg_g, RegMemImm::reg(reg_g))
@@ -306,6 +307,7 @@ pub(crate) fn emit(
                     }
                 }
             }
+            state.last_alu_len = sink.cur_offset() - code_off;
         }
 
         Inst::AluRM {
@@ -314,7 +316,8 @@ pub(crate) fn emit(
             src2,
             op,
         } => {
-            state.last_alu_op = Some(sink.cur_offset());
+            let code_off = sink.cur_offset();
+            state.last_alu_op = Some(code_off);
             let src2 = allocs.next(src2.to_reg());
             let src1_dst = src1_dst.finalize(state, sink).with_allocs(allocs);
 
@@ -353,6 +356,7 @@ pub(crate) fn emit(
 
             let enc_g = int_reg_enc(src2);
             emit_std_enc_mem(sink, prefix, opcode, 1, enc_g, &src1_dst, rex, 0);
+            state.last_alu_len = sink.cur_offset() - code_off;
         }
 
         Inst::UnaryRmR { size, op, src, dst } => {
@@ -528,7 +532,8 @@ pub(crate) fn emit(
             src2,
             dst,
         } => {
-            state.last_alu_op = Some(sink.cur_offset());
+            let code_off = sink.cur_offset();
+            state.last_alu_op = Some(code_off);
             let src1 = allocs.next(src1.to_reg());
             let dst = allocs.next(dst.to_reg().to_reg());
             debug_assert_eq!(src1, regs::rax());
@@ -560,6 +565,7 @@ pub(crate) fn emit(
                     emit_std_enc_mem(sink, prefix, opcode, 1, 4, &amode, rex_flags, 0);
                 }
             }
+            state.last_alu_len = sink.cur_offset() - code_off;
         }
 
         Inst::SignExtendData { size, src, dst } => {
@@ -1719,7 +1725,10 @@ pub(crate) fn emit(
 
 
                     let alu_size = alu_off - set_off;
-                    if alu_size < 2 || alu_size > 7 {
+                    if alu_size != state.last_alu_len {
+                        break 'block;
+                    }
+                    /*if alu_size < 2 || alu_size > 7 {
                         break 'block;
                     }
 
@@ -1797,7 +1806,7 @@ pub(crate) fn emit(
                             }
                         },
                         _ => break 'block,
-                    }
+                    }*/
 
                     // we have a match and can rewrite
                     sink.pop_bytes(set_off as usize);
