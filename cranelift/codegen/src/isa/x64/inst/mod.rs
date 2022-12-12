@@ -2517,6 +2517,9 @@ pub struct EmitState {
     stack_map: Option<StackMap>,
     /// Current source location.
     cur_srcloc: RelSourceLoc,
+    last_alu_op: Option<CodeOffset>,
+    last_set_op: Option<CodeOffset>,
+    last_test_op: Option<CodeOffset>,
 }
 
 /// Constant state used during emissions of a sequence of instructions.
@@ -2558,6 +2561,9 @@ impl MachInstEmitState<Inst> for EmitState {
             nominal_sp_to_fp: abi.frame_size() as i64,
             stack_map: None,
             cur_srcloc: Default::default(),
+            last_alu_op: None,
+            last_set_op: None,
+            last_test_op: None,
         }
     }
 

@@ -388,6 +388,14 @@ impl<I: VCodeInst> MachBuffer<I> {
         self.data.len() as CodeOffset
     }
 
+    pub fn byte_at(&self, off: CodeOffset) -> u8 {
+        self.data[off as usize]
+    }
+
+    pub fn pop_bytes(&mut self, amount: usize) {
+        self.data.truncate(self.data.len() - amount);
+    }
+
     /// Add a byte.
     pub fn put1(&mut self, value: u8) {
         trace!("MachBuffer: put byte @ {}: {:x}", self.cur_offset(), value);

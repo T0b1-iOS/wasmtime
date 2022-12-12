@@ -147,6 +147,7 @@ pub(crate) fn emit(
             src2,
             dst: reg_g,
         } => {
+            state.last_alu_op = Some(sink.cur_offset());
             let (reg_g, src2) = if inst.produces_const() {
                 let reg_g = allocs.next(reg_g.to_reg().to_reg());
                 (reg_g, RegMemImm::reg(reg_g))
@@ -313,6 +314,7 @@ pub(crate) fn emit(
             src2,
             op,
         } => {
+            state.last_alu_op = Some(sink.cur_offset());
             let src2 = allocs.next(src2.to_reg());
             let src1_dst = src1_dst.finalize(state, sink).with_allocs(allocs);
 
@@ -526,6 +528,7 @@ pub(crate) fn emit(
             src2,
             dst,
         } => {
+            state.last_alu_op = Some(sink.cur_offset());
             let src1 = allocs.next(src1.to_reg());
             let dst = allocs.next(dst.to_reg().to_reg());
             debug_assert_eq!(src1, regs::rax());
@@ -1149,6 +1152,12 @@ pub(crate) fn emit(
                         rex.always_emit_if_8bit_needed(reg_e);
                     }
 
+                    if !is_cmp {
+                        state.last_test_op = Some(sink.cur_offset());
+                    } else {
+                        state.last_test_op = None;
+                    }
+
                     // Use the swapped operands encoding for CMP, to stay consistent with the output of
                     // gcc/llvm.
                     let opcode = match (*size, is_cmp) {
@@ -1203,10 +1212,18 @@ pub(crate) fn emit(
         }
 
         Inst::Setcc { cc, dst } => {
+            match *cc {
+                CC::B | CC::O => {
+                    state.last_set_op = Some(sink.cur_offset());
+                }
+                _ => {
+                    state.last_set_op = None;
+                }
+            }
             let dst = allocs.next(dst.to_reg().to_reg());
             let opcode = 0x0f90 + cc.get_enc() as u32;
             let mut rex_flags = RexFlags::clear_w();
-            rex_flags.always_emit();
+            rex_flags.always_emit_if_8bit_needed(dst);
             emit_std_enc_enc(
                 sink,
                 LegacyPrefixes::None,
@@ -1547,6 +1564,260 @@ pub(crate) fn emit(
             taken,
             not_taken,
         } => {
+            let mut cc = *cc;
+            match cc {
+                CC::Z | CC::NZ => 'block: {
+                    if state.last_set_op.is_none() || state.last_test_op.is_none() || state.last_alu_op.is_none() {
+                        break 'block;
+                    }
+
+                    let last_set_op = state.last_set_op.unwrap();
+                    let last_test_op = state.last_test_op.unwrap();
+                    let last_alu_op = state.last_alu_op.unwrap();
+                    
+                    let set_off = sink.cur_offset() - last_set_op;
+                    let test_off = sink.cur_offset() - last_test_op;
+                    let alu_off = sink.cur_offset() - last_alu_op;
+
+                    let mut test_reg: u8;
+                    let mut is_below = true;
+                    if test_off == 2 {
+                        // set must not have rex prefix
+                        if set_off != 3 + 2 {
+                            break 'block;
+                        }
+
+                        if sink.byte_at(last_test_op) != 0x84 {
+                            break 'block;
+                        }
+
+                        let modrm = sink.byte_at(last_test_op + 1);
+                        // only register-direct addressing
+                        if (modrm & 0xC0) != 0xC0 {
+                            break 'block;
+                        }
+
+                        test_reg = (modrm & 0x38) >> 3;
+                        // needs to be the same register
+                        if test_reg != (modrm & 0x7) {
+                            break 'block;
+                        }
+                    } else if test_off == 3 {
+                        // set must also have rex prefix
+                        if set_off != 4 + 3 {
+                            break 'block;
+                        }
+
+                        let rex = sink.byte_at(last_test_op);
+                        if (rex & 0x40) != 0x40 {
+                            break 'block;
+                        }
+
+                        if sink.byte_at(last_test_op + 1) != 0x84 {
+                            break 'block;
+                        }
+
+                        // need 8bit mode and no sib
+                        if (rex & 0xA) != 0 {
+                            break 'block;
+                        }
+
+                        // REX.R == REX.B
+                        if (rex & 5) != 5 && (rex & 5) != 0 {
+                            break 'block;
+                        }
+
+                        let modrm = sink.byte_at(last_test_op + 2);
+                        // only register-direct addressing
+                        if (modrm & 0xC0) != 0xC0 {
+                            break 'block;
+                        }
+
+                        test_reg = (modrm & 0x38) >> 3;
+                        // needs to be the same register
+                        if test_reg != (modrm & 0x7) {
+                            break 'block;
+                        }
+                        test_reg += (rex & 1) << 3;
+                    } else {
+                        break 'block;
+                    }
+
+                    if test_off == 2 {
+                        if sink.byte_at(last_set_op) != 0x0F {
+                            break 'block;
+                        }
+                        // either setb or seto
+                        if sink.byte_at(last_set_op + 1) != 0x92 && sink.byte_at(last_set_op + 1) != 0x90 {
+                            break 'block;
+                        }
+
+                        if sink.byte_at(last_set_op + 1) != 0x92 {
+                            is_below = false;
+                        }
+
+                        let modrm = sink.byte_at(last_set_op + 2);
+                        // only register-direct addressing
+                        if (modrm & 0xC0) != 0xC0 {
+                            break 'block;
+                        }
+
+                        if (modrm & 0x7) != test_reg {
+                            break 'block;
+                        }
+                    } else {
+                        let rex = sink.byte_at(last_set_op);
+                        if (rex & 0x40) != 0x40 {
+                            break 'block;
+                        }
+
+                        if (test_reg & 0x8) != 0 {
+                            if (rex & 1) != 1 {
+                                break 'block;
+                            }
+                        } else {
+                            if (rex & 1) == 1 {
+                                break 'block;
+                            }
+                        }
+
+                        if sink.byte_at(last_set_op + 1) != 0x0F {
+                            break 'block;
+                        }
+                        // either setb or seto
+                        if sink.byte_at(last_set_op + 2) != 0x92 && sink.byte_at(last_set_op + 2) != 0x90 {
+                            break 'block;
+                        }
+
+                        if sink.byte_at(last_set_op + 2) != 0x92 {
+                            is_below = false;
+                        }
+
+                        let modrm = sink.byte_at(last_set_op + 3);
+                        // only register-direct addressing
+                        if (modrm & 0xC0) != 0xC0 {
+                            break 'block;
+                        }
+
+                        if (modrm & 0x7) != (test_reg) & 0x7 {
+                            break 'block;
+                        }
+                    }
+
+                    // TODO: memory operands
+                    // now we know that there is a seto/setb r8 with a test r8, r8 after
+                    // we just need to check if there is a valid alu op directly in front of it
+                    // valid alu encodings
+                    // REX? + (F6|F7) + MODRM
+                    // REX? + 0F + AF + MODRM
+                    // REX? + (80|83|6B) + MODRM + IMM8
+                    // 66 + (83|6B) + MODRM + IMM8
+                    // 66 + (81|69) + MODRM + IMM16
+                    // REX? + (81|69) + MODRM + IMM32
+                    // -> valid sizes:
+                    // 2,3,4,5,6,7
+
+
+                    let alu_size = alu_off - set_off;
+                    if alu_size < 2 || alu_size > 7 {
+                        break 'block;
+                    }
+
+                    // could probably also match size which might be faster?
+                    let first_byte = sink.byte_at(last_alu_op);
+                    match first_byte {
+                        0x40..=0x4F => {
+                            let sec_byte = sink.byte_at(last_alu_op + 1);
+                            match sec_byte {
+                                0xF6 | 0xF7 => {
+                                    if alu_size != 3 {
+                                        break 'block;
+                                    }
+                                },
+                                0x0F => {
+                                    if alu_size != 4 {
+                                        break 'block;
+                                    }
+                                    let third_byte = sink.byte_at(last_alu_op + 2);
+                                    if third_byte != 0xAF {
+                                        break 'block;
+                                    }
+                                },
+                                0x80 | 0x83 | 0x6B => {
+                                    if alu_size != 4 {
+                                        break 'block;
+                                    }
+                                },
+                                0x81 | 0x69 => {
+                                    if alu_size != 7 {
+                                        break 'block;
+                                    }
+                                },
+                                _ => break 'block,
+                            }
+                        }
+                        0x66 => {
+                            let sec_byte = sink.byte_at(last_alu_op + 1);
+                            match sec_byte {
+                                0x83 | 0x6B => {
+                                    if alu_size != 4 {
+                                        break 'block;
+                                    }
+                                },
+                                0x81 | 0x69 => {
+                                    if alu_size != 5 {
+                                        break 'block;
+                                    }
+                                },
+                                _ => break 'block,
+                            }
+                        }
+                        0xF6 | 0xF7 => {
+                            if alu_size != 2 {
+                                break 'block;
+                            }
+                        }
+                        0x0F => {
+                            if alu_size != 3 {
+                                break 'block;
+                            }
+                            let sec_byte = sink.byte_at(last_alu_op + 1);
+                            if sec_byte != 0xAF {
+                                break 'block;
+                            }
+                        },
+                        0x80 | 0x83 | 0x6B => {
+                            if alu_size != 3 {
+                                break 'block;
+                            }
+                        },
+                        0x81 | 0x69 => {
+                            if alu_size != 6 {
+                                break 'block;
+                            }
+                        },
+                        _ => break 'block,
+                    }
+
+                    // we have a match and can rewrite
+                    sink.pop_bytes(set_off as usize);
+                    match cc {
+                        CC::NZ => cc = if is_below {
+                            CC::B
+                        } else {
+                            CC::O
+                        },
+                        CC::Z => cc = if is_below {
+                            CC::NB
+                        } else {
+                            CC::NO
+                        },
+                        _ => unreachable!()
+                    }
+                },
+                _ => {}
+            }
+
             // If taken.
             let cond_start = sink.cur_offset();
             let cond_disp_off = cond_start + 2;
