@@ -2447,6 +2447,7 @@ pub struct EmitState {
     /// Current source location.
     cur_srcloc: RelSourceLoc,
     last_alu_op: Option<CodeOffset>,
+    last_alu_len: u32,
     last_set_op: Option<CodeOffset>,
     last_test_op: Option<CodeOffset>,
 }
@@ -2492,6 +2493,7 @@ impl MachInstEmitState<Inst> for EmitState {
             stack_map: None,
             cur_srcloc: Default::default(),
             last_alu_op: None,
+            last_alu_len: 0,
             last_set_op: None,
             last_test_op: None,
         }
