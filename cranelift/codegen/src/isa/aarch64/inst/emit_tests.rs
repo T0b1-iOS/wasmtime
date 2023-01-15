@@ -7795,7 +7795,13 @@ fn test_aarch64_binemit() {
     insns.push((Inst::Fence {}, "BF3B03D5", "dmb ish"));
 
     let flags = settings::Flags::new(settings::builder());
-    let emit_info = EmitInfo::new(flags);
+
+    use crate::settings::Configurable;
+    let mut isa_flags_builder = crate::isa::aarch64::settings::builder();
+    isa_flags_builder.enable("has_crc").unwrap();
+    let isa_flags = crate::isa::aarch64::settings::Flags::new(&flags, isa_flags_builder);
+
+    let emit_info = EmitInfo::new(flags, isa_flags);
     for (insn, expected_encoding, expected_printing) in insns {
         println!(
             "AArch64: {:?}, {}, {}",

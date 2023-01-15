@@ -144,6 +144,141 @@ fn inst_size_test() {
 }
 
 impl Inst {
+    fn available_with_any_feature(&self) -> SmallVec<[IsaFeature; 1]> {
+        match self {
+            Inst::Crc32c { .. } => smallvec![IsaFeature::CRC],
+            Inst::Nop0
+            | Inst::Nop4
+            | Inst::AluRRR { .. }
+            | Inst::AluRRRR { .. }
+            | Inst::AluRRImm12 { .. }
+            | Inst::AluRRImmLogic { .. }
+            | Inst::AluRRImmShift { .. }
+            | Inst::AluRRRShift { .. }
+            | Inst::AluRRRExtend { .. }
+            | Inst::BitRR { .. }
+            | Inst::ULoad8 { .. }
+            | Inst::SLoad8 { .. }
+            | Inst::ULoad16 { .. }
+            | Inst::SLoad16 { .. }
+            | Inst::ULoad32 { .. }
+            | Inst::SLoad32 { .. }
+            | Inst::ULoad64 { .. }
+            | Inst::Store8 { .. }
+            | Inst::Store16 { .. }
+            | Inst::Store32 { .. }
+            | Inst::Store64 { .. }
+            | Inst::StoreP64 { .. }
+            | Inst::LoadP64 { .. }
+            | Inst::Mov { .. }
+            | Inst::MovFromPReg { .. }
+            | Inst::MovToPReg { .. }
+            | Inst::MovWide { .. }
+            | Inst::MovK { .. }
+            | Inst::Extend { .. }
+            | Inst::CSel { .. }
+            | Inst::CSNeg { .. }
+            | Inst::CSet { .. }
+            | Inst::CSetm { .. }
+            | Inst::CCmp { .. }
+            | Inst::CCmpImm { .. }
+            | Inst::AtomicRMWLoop { .. }
+            | Inst::AtomicCASLoop { .. }
+            | Inst::AtomicRMW { .. }
+            | Inst::AtomicCAS { .. }
+            | Inst::LoadAcquire { .. }
+            | Inst::StoreRelease { .. }
+            | Inst::Fence
+            | Inst::Csdb
+            | Inst::FpuMove64 { .. }
+            | Inst::FpuMove128 { .. }
+            | Inst::FpuMoveFromVec { .. }
+            | Inst::FpuExtend { .. }
+            | Inst::FpuRR { .. }
+            | Inst::FpuRRR { .. }
+            | Inst::FpuRRI { .. }
+            | Inst::FpuRRIMod { .. }
+            | Inst::FpuRRRR { .. }
+            | Inst::FpuCmp { .. }
+            | Inst::FpuLoad32 { .. }
+            | Inst::FpuStore32 { .. }
+            | Inst::FpuLoad64 { .. }
+            | Inst::FpuStore64 { .. }
+            | Inst::FpuLoad128 { .. }
+            | Inst::FpuStore128 { .. }
+            | Inst::FpuLoadP64 { .. }
+            | Inst::FpuStoreP64 { .. }
+            | Inst::FpuLoadP128 { .. }
+            | Inst::FpuStoreP128 { .. }
+            | Inst::LoadFpuConst64 { .. }
+            | Inst::LoadFpuConst128 { .. }
+            | Inst::FpuToInt { .. }
+            | Inst::IntToFpu { .. }
+            | Inst::FpuCSel32 { .. }
+            | Inst::FpuCSel64 { .. }
+            | Inst::FpuRound { .. }
+            | Inst::MovToFpu { .. }
+            | Inst::FpuMoveFPImm { .. }
+            | Inst::MovToVec { .. }
+            | Inst::MovFromVec { .. }
+            | Inst::MovFromVecSigned { .. }
+            | Inst::VecDup { .. }
+            | Inst::VecDupFromFpu { .. }
+            | Inst::VecDupFPImm { .. }
+            | Inst::VecDupImm { .. }
+            | Inst::VecExtend { .. }
+            | Inst::VecMovElement { .. }
+            | Inst::VecRRLong { .. }
+            | Inst::VecRRNarrowLow { .. }
+            | Inst::VecRRNarrowHigh { .. }
+            | Inst::VecRRPair { .. }
+            | Inst::VecRRRLong { .. }
+            | Inst::VecRRRLongMod { .. }
+            | Inst::VecRRPairLong { .. }
+            | Inst::VecRRR { .. }
+            | Inst::VecRRRMod { .. }
+            | Inst::VecMisc { .. }
+            | Inst::VecLanes { .. }
+            | Inst::VecShiftImm { .. }
+            | Inst::VecShiftImmMod { .. }
+            | Inst::VecExtract { .. }
+            | Inst::VecTbl { .. }
+            | Inst::VecTblExt { .. }
+            | Inst::VecTbl2 { .. }
+            | Inst::VecTbl2Ext { .. }
+            | Inst::VecLoadReplicate { .. }
+            | Inst::VecCSel { .. }
+            | Inst::MovToNZCV { .. }
+            | Inst::MovFromNZCV { .. }
+            | Inst::Call { .. }
+            | Inst::CallInd { .. }
+            | Inst::Args { .. }
+            | Inst::Ret { .. }
+            | Inst::AuthenticatedRet { .. }
+            | Inst::Jump { .. }
+            | Inst::CondBr { .. }
+            | Inst::TrapIf { .. }
+            | Inst::IndirectBr { .. }
+            | Inst::Brk
+            | Inst::Udf { .. }
+            | Inst::Adr { .. }
+            | Inst::Word4 { .. }
+            | Inst::Word8 { .. }
+            | Inst::JTSequence { .. }
+            | Inst::LoadExtName { .. }
+            | Inst::LoadAddr { .. }
+            | Inst::Pacisp { .. }
+            | Inst::Xpaclri
+            | Inst::Bti { .. }
+            | Inst::VirtualSPOffsetAdj { .. }
+            | Inst::EmitIsland { .. }
+            | Inst::ElfTlsGetAddr { .. }
+            | Inst::Unwind { .. }
+            | Inst::DummyUse { .. }
+            | Inst::StackProbeLoop { .. } => smallvec![],
+        }
+    }
+
     /// Create an instruction that loads a constant, using one of serveral options (MOVZ, MOVN,
     /// logical immediate, or constant pool).
     pub fn load_constant<F: FnMut(Type) -> Writable<Reg>>(
@@ -631,6 +766,11 @@ fn aarch64_get_operands<F: Fn(VReg) -> VReg>(inst: &Inst, collector: &mut Operan
         &Inst::BitRR { rd, rn, .. } => {
             collector.reg_def(rd);
             collector.reg_use(rn);
+        }
+        &Inst::Crc32c { rd, rn, rm, .. } => {
+            collector.reg_def(rd);
+            collector.reg_use(rn);
+            collector.reg_use(rm);
         }
         &Inst::ULoad8 { rd, ref mem, .. }
         | &Inst::SLoad8 { rd, ref mem, .. }
@@ -1477,6 +1617,12 @@ impl Inst {
                 let rd = pretty_print_ireg(rd.to_reg(), size, allocs);
                 let rn = pretty_print_ireg(rn, size, allocs);
                 format!("{} {}, {}", op, rd, rn)
+            }
+            &Inst::Crc32c { size, rd, rn, rm } => {
+                let rd = pretty_print_ireg(rd.to_reg(), OperandSize::Size32, allocs);
+                let rn = pretty_print_ireg(rn, OperandSize::Size32, allocs);
+                let rm = pretty_print_ireg(rm, size, allocs);
+                format!("crc32c {}, {}, {}", rd, rn, rm)
             }
             &Inst::ULoad8 { rd, ref mem, .. }
             | &Inst::SLoad8 { rd, ref mem, .. }

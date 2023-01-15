@@ -20,6 +20,11 @@ fn define_settings(_shared: &SettingGroup) -> SettingGroup {
         "",
         false,
     );
+    setting.add_bool("has_crc",
+     "Has CRC (FEAT_CRC) support; enables the use of \
+        crc instructions.",
+        "", 
+        false);
     setting.add_bool(
         "sign_return_address_all",
         "If function return address signing is enabled, then apply it to all \
