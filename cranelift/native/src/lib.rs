@@ -142,6 +142,10 @@ pub fn builder_with_options(infer_native_flags: bool) -> Result<isa::Builder, &'
             isa_builder.enable("has_pauth").unwrap();
         }
 
+        if std::arch::is_aarch64_feature_detected!("crc") {
+            isa_builder.enable("has_crc").unwrap();
+        }
+
         if cfg!(target_os = "macos") {
             // Pointer authentication is always available on Apple Silicon.
             isa_builder.enable("sign_return_address").unwrap();

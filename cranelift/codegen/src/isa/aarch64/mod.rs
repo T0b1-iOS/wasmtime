@@ -22,7 +22,7 @@ mod abi;
 pub(crate) mod inst;
 mod lower;
 mod lower_inst;
-mod settings;
+pub(crate) mod settings;
 
 use inst::create_reg_env;
 
@@ -58,7 +58,7 @@ impl AArch64Backend {
         &self,
         func: &Function,
     ) -> CodegenResult<(VCode<inst::Inst>, regalloc2::Output)> {
-        let emit_info = EmitInfo::new(self.flags.clone());
+        let emit_info = EmitInfo::new(self.flags.clone(), self.isa_flags.clone());
         let sigs = SigSet::new::<abi::AArch64MachineDeps>(func, &self.flags)?;
         let abi = abi::AArch64Callee::new(func, self, &self.isa_flags, &sigs)?;
         compile::compile::<AArch64Backend>(func, self, abi, emit_info, sigs)

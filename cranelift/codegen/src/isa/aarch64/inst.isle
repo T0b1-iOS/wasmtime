@@ -242,6 +242,13 @@
         (nzcv NZCV)
         (cond Cond))
 
+       ;; Accumulates a CRC32C hash value
+       (Crc32c 
+        (size OperandSize)
+        (rd WritableReg)
+        (rn Reg)
+        (rm Reg))
+
        ;; A synthetic insn, which is a load-linked store-conditional loop, that has the overall
        ;; effect of atomically modifying a memory location in a particular way.  Because we have
        ;; no way to explain to the regalloc about earlyclobber registers, this instruction has
@@ -1963,6 +1970,13 @@
         (ProducesFlags.ProducesFlagsReturnsResultWithConsumer
          (MInst.AluRRR (ALUOp.SubS) (operand_size ty) dst src1 src2)
          dst)))
+
+;; Helper for emitting `crc32c` instructions.
+(decl crc32c_helper (Type Reg Reg) Reg)
+(rule (crc32c_helper ty src1 src2)
+      (let ((dst WritableReg (temp_writable_reg $I64))
+            (_ Unit (emit (MInst.Crc32c (operand_size ty) dst src1 src2))))
+        dst))
 
 ;; Helper for materializing a boolean value into a register from
 ;; flags.

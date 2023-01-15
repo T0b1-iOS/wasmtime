@@ -6,6 +6,7 @@ use crate::binemit::{CodeOffset, Reloc, StackMap};
 use crate::ir::{types::*, RelSourceLoc};
 use crate::ir::{LibCall, MemFlags, TrapCode};
 use crate::isa::aarch64::inst::*;
+use crate::isa::aarch64::settings as aarch64_settings;
 use crate::machinst::{ty_bits, Reg, RegClass, Writable};
 use crate::trace;
 use core::convert::TryFrom;
@@ -672,11 +673,17 @@ impl EmitState {
 }
 
 /// Constant state used during function compilation.
-pub struct EmitInfo(settings::Flags);
+pub struct EmitInfo {
+    flags: settings::Flags,
+    isa_flags: aarch64_settings::Flags
+}
 
 impl EmitInfo {
-    pub(crate) fn new(flags: settings::Flags) -> Self {
-        Self(flags)
+    pub(crate) fn new(flags: settings::Flags, isa_flags: aarch64_settings::Flags) -> Self {
+        Self {
+            flags,
+            isa_flags
+        }
     }
 }
 
@@ -699,6 +706,21 @@ impl MachInstEmit for Inst {
         // to allow disabling the check for `JTSequence`, which is always
         // emitted following an `EmitIsland`.
         let mut start_off = sink.cur_offset();
+
+        let matches_isa_flags = |iset_requirement: &IsaFeature| -> bool {
+            match iset_requirement {
+                IsaFeature::CRC => emit_info.isa_flags.has_crc()
+            }
+        };
+
+        // Certain instructions may only be available with specific features, check if they are present if required
+        let feature_requirements = self.available_with_any_feature();
+        if !feature_requirements.is_empty() && !feature_requirements.iter().all(matches_isa_flags) {
+            panic!(
+                "Cannot emit inst '{:?}' for target; failed to match Feature requirements: {:?}",
+                self, feature_requirements
+            )
+        }
 
         match self {
             &Inst::AluRRR {
@@ -932,6 +954,22 @@ impl MachInstEmit for Inst {
                     BitOp::Rev64 => (0b00000, 0b000011),
                 };
                 sink.put4(enc_bit_rr(size.sf_bit(), op1, op2, rn, rd))
+            }
+
+            &Inst::Crc32c { size, rd, rn, rm } => {
+                let rd = allocs.next_writable(rd);
+                let rn = allocs.next(rn);
+                let rm = allocs.next(rm);
+
+                let top11 = 0b00011010110;
+                let top11 = top11 | size.sf_bit() << 10;
+                let bit15_10 = 0b010100;
+                let bit15_10 = match size {
+                    OperandSize::Size64 => bit15_10 | 0b11,
+                    OperandSize::Size32 => bit15_10 | 0b10,
+                };
+                debug_assert_ne!(writable_stack_reg(), rd);
+                sink.put4(enc_arith_rrr(top11, bit15_10, rd, rn, rm));
             }
 
             &Inst::ULoad8 { rd, ref mem, flags }
@@ -3419,7 +3457,7 @@ impl MachInstEmit for Inst {
             &Inst::DummyUse { .. } => {}
 
             &Inst::StackProbeLoop { start, end, step } => {
-                assert!(emit_info.0.enable_probestack());
+                assert!(emit_info.flags.enable_probestack());
                 let start = allocs.next_writable(start);
                 let end = allocs.next(end);
 

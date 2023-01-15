@@ -98,6 +98,8 @@ pub(crate) fn lower_insn_to_regs(
 
         Opcode::Bswap => implemented_in_isle(ctx),
 
+        Opcode::Crc32c => implemented_in_isle(ctx),
+
         Opcode::Popcnt => implemented_in_isle(ctx),
 
         Opcode::Load
@@ -321,7 +323,7 @@ pub(crate) fn lower_insn_to_regs(
 
         Opcode::ExtractVector => implemented_in_isle(ctx),
 
-        Opcode::Vconcat | Opcode::Vsplit | Opcode::Crc32c => {
+        Opcode::Vconcat | Opcode::Vsplit => {
             return Err(CodegenError::Unsupported(format!(
                 "Unimplemented lowering: {}",
                 op
