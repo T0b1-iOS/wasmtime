@@ -2291,6 +2291,9 @@
 (rule (lower (has_type $I64
                        (uextend src @ (has_type $I32 (uload32 _ _ _)))))
       src)
+(rule (lower (has_type $I64
+                       (uextend src @ (has_type $I32 (crc32c _ _)))))
+      src)
 
 ;; Rules for `sextend` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
