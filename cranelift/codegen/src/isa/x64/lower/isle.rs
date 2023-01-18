@@ -289,6 +289,16 @@ impl Context for IsleContext<'_, '_, MInst, Flags, IsaFlags, 6> {
         to_simm32(imm.bits())
     }
 
+    #[inline]
+    fn value_is_const(&mut self, val: Value) -> Option<Value> {
+        let inst = self.lower_ctx.dfg().value_def(val).inst()?;
+        if self.lower_ctx.get_constant(inst).is_some() {
+            Some(val)
+        } else {
+            None
+        }
+    }
+
     fn sinkable_load(&mut self, val: Value) -> Option<SinkableLoad> {
         let input = self.lower_ctx.get_value_as_source_or_const(val);
         if let InputSourceInst::UniqueUse(inst, 0) = input.inst {

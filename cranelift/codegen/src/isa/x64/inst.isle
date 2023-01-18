@@ -1450,6 +1450,10 @@
 (decl shift_mask (Type) u32)
 (extern constructor shift_mask shift_mask)
 
+;; Check if value is a constant
+(decl value_is_const (Value) Value)
+(extern extractor value_is_const value_is_const)
+
 ;; Extract a constant `GprMemImm.Imm` from a value operand.
 (decl simm32_from_value (GprMemImm) Value)
 (extern extractor simm32_from_value simm32_from_value)

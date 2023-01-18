@@ -950,7 +950,7 @@
 ;; `i64` and smaller.
 
 ;; Multiply two registers.
-(rule -5 (lower (has_type (fits_in_64 ty) (imul x y)))
+(rule -7 (lower (has_type (fits_in_64 ty) (imul x y)))
       (x64_mul ty x y))
 
 ;; Multiply a register and an immediate.
@@ -962,6 +962,15 @@
 (rule -4 (lower (has_type (fits_in_64 ty)
                        (imul (simm32_from_value x) y)))
       (x64_mul ty y x))
+
+;; Constant should not be loaded from a pool but loaded into a reg instead
+(rule -5 (lower (has_type (fits_in_64 ty)
+                        (imul x (value_is_const y))))
+      (x64_mul ty x (put_in_gpr y)))
+
+(rule -6 (lower (has_type (fits_in_64 ty)
+                        (imul (value_is_const x) y)))
+      (x64_mul ty y (put_in_gpr x)))
 
 ;; Multiply a register and a memory load.
 
@@ -2319,6 +2328,18 @@
 (rule (lower (has_type $I64
                        (uextend src @ (has_type $I32 (crc32c _ _)))))
       src)
+
+
+;; memory loads for sub-64bit loads currently automatically zero-extend
+(rule (lower (has_type $I64
+                        (uextend src @ (has_type (and (fits_in_32 ty2) (is_gpr_type _)) (load flags address offset)))))
+                        src)
+(rule (lower (has_type $I32
+                        (uextend src @ (has_type (and (fits_in_32 ty2) (is_gpr_type _)) (load flags address offset)))))
+                        src)
+(rule (lower (has_type $I16
+                        (uextend src @ (has_type $I8 (load flags address offset)))))
+                        src)
 
 ;; Rules for `sextend` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
