@@ -173,7 +173,7 @@
                (src2 GprMem)
                (dst WritableGpr))
 
-       ;; res = and(src1, not(src2))
+       ;; res = and(not(src1), src2)
        (Andn (size OperandSize) ;; 4 or 8
               (src1 Gpr)
               (src2 GprMem)
@@ -2063,6 +2063,16 @@
             (size OperandSize (operand_size_of_type_32_64 ty))
             (_ Unit (emit (MInst.Andn size src1 src2 dst))))
         dst))
+
+(decl x64_andn_with_flags_paired (Type Gpr GprMem) ProducesFlags)
+(rule (x64_andn_with_flags_paired ty src1 src2)
+     (let ((dst WritableGpr (temp_writable_gpr)))
+           (ProducesFlags.ProducesFlagsReturnsResultWithConsumer
+                 (MInst.Andn (operand_size_of_type_32_64 ty)
+                               src1
+                               src2
+                               dst)
+                  dst)))
 
 ;; Helper for creating `MInst.CmpRmiR` instructions.
 (decl cmp_rmi_r (OperandSize CmpOpcode GprMemImm Gpr) ProducesFlags)
