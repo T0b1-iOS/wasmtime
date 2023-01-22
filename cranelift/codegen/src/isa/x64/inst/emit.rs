@@ -1275,6 +1275,27 @@ pub(crate) fn emit(
             }
         }
 
+        Inst::Andn { size, src1, src2, dst } => {
+            let src1 = allocs.next(src1.to_reg());
+            let dst = allocs.next(dst.to_reg().to_reg());
+            
+            match src2.clone().to_reg_mem() {
+                RegMem::Reg { reg: src2 } => {
+                    let src2 = allocs.next(src2);
+                    VexInstruction::new()
+                    .length(VexVectorLength::V128)
+                    .map(OpcodeMap::_0F38)
+                    .w(*size == OperandSize::Size64)
+                    .opcode(0xF2)
+                    .reg(dst.to_real_reg().unwrap().hw_enc())
+                    .vvvv(src1.to_real_reg().unwrap().hw_enc())
+                    .rm(src2.to_real_reg().unwrap().hw_enc())
+                    .encode(sink)
+                }
+                RegMem::Mem { .. } => todo!()
+            }
+        } 
+
         Inst::Cmove {
             size,
             cc,

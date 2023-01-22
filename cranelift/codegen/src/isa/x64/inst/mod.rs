@@ -145,6 +145,7 @@ impl Inst {
 
             // needs SSE4.2
             Inst::Crc32 {..} => smallvec![InstructionSet::SSE42],
+            Inst::Andn { .. } => smallvec![InstructionSet::BMI1],
         }
     }
 }
@@ -1459,6 +1460,20 @@ impl PrettyPrint for Inst {
                 )
             }
 
+            Inst::Andn { size, src1, src2, dst } => {
+                let src1 = pretty_print_reg(src1.to_reg(), size.to_bytes(), allocs);
+                let dst = pretty_print_reg(dst.to_reg().to_reg(), size.to_bytes(), allocs);
+                let src2 = src2.pretty_print(size.to_bytes(), allocs);
+                format!(
+                    "{} {}, {}, {}",
+                    ljustify2("andn".to_string(),
+                    suffix_bwlq(*size)),
+                    src1,
+                    src2,
+                    dst
+                )
+            }
+
             Inst::Cmove {
                 size,
                 cc,
@@ -2089,6 +2104,11 @@ fn x64_get_operands<F: Fn(VReg) -> VReg>(inst: &Inst, collector: &mut OperandCol
         Inst::Crc32 { src1, src2, dst, .. } => {
             collector.reg_use(src1.to_reg());
             collector.reg_reuse_def(dst.to_writable_reg(), 0);
+            src2.get_operands(collector);
+        }
+        Inst::Andn { src1, src2, dst, .. } => {
+            collector.reg_use(src1.to_reg());
+            collector.reg_def(dst.to_writable_reg());
             src2.get_operands(collector);
         }
         Inst::Cmove {
