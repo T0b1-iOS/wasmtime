@@ -259,6 +259,10 @@
 (decl ty_32_or_64 (Type) Type)
 (extern extractor ty_32_or_64 ty_32_or_64)
 
+;; An extractor that matches 16-, 32- and 64-bit types only.
+(decl ty_16_32_or_64 (Type) Type)
+(extern extractor ty_16_32_or_64 ty_16_32_or_64)
+
 ;; An extractor that matches 8- and 16-bit types only.
 (decl ty_8_or_16 (Type) Type)
 (extern extractor ty_8_or_16 ty_8_or_16)

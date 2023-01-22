@@ -1175,6 +1175,45 @@ pub(crate) fn emit(
             }
         }
 
+        Inst::Bittest { size, field, idx } => {
+            debug_assert!(*size != OperandSize::Size8);
+
+            let rex = RexFlags::from(*size);
+            let prefix = if *size == OperandSize::Size16 {
+                LegacyPrefixes::_66
+            } else {
+                LegacyPrefixes::None
+            };
+            match field.clone().to_reg_mem() {
+                RegMem::Reg { reg: field_reg } => {
+                    let field_reg = allocs.next(field_reg);
+                    match idx.clone().to_imm8_reg() {
+                        Imm8Reg::Reg { reg: idx_reg } => {
+                            let idx_reg = allocs.next(idx_reg);
+                            emit_std_reg_reg(sink, prefix, 0x0FA3, 2, field_reg, idx_reg, rex);
+                        },
+                        Imm8Reg::Imm8 { imm } => {
+                            emit_std_enc_enc(sink, prefix, 0x0FBA, 2, 4, int_reg_enc(field_reg), rex);
+                            emit_simm(sink, 1, imm as u32);
+                        }
+                    }
+                },
+                RegMem::Mem { addr } => {
+                    let amode = addr.finalize(state, sink);
+                    match idx.clone().to_imm8_reg() {
+                        Imm8Reg::Reg { reg: idx_reg } => {
+                            let idx_reg = allocs.next(idx_reg);
+                            emit_std_reg_mem(sink, prefix, 0x0FA3, 2, idx_reg, &amode, rex, 0);
+                        }
+                        Imm8Reg::Imm8 { imm } => {
+                            emit_std_enc_mem(sink, prefix, 0x0FBA, 2, 4, &amode, rex, 1);
+                            emit_simm(sink, 1, imm as u32);
+                        }
+                    }
+                }
+            }
+        }
+
         Inst::Andn { size, src1, src2, dst } => {
             let src1 = allocs.next(src1.to_reg());
             let dst = allocs.next(dst.to_reg().to_reg());
