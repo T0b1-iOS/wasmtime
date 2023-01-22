@@ -1204,7 +1204,10 @@
 
 ;; sinkable load not yet supported
 (rule 0 (lower (has_type (and $I64 (use_bmi1 $true)) (band_not x y)))
-      (x64_andn $I64 x (put_in_gpr y)))
+      (x64_andn $I64 y (put_in_gpr x)))
+
+(rule 0 (lower (has_type (and $I32 (use_bmi1 $true)) (band_not x y)))
+      (x64_andn $I32 y (put_in_gpr x)))
 
 ;;;; Rules for `iabs` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3067,6 +3070,7 @@
         (with_flags_side_effect (cmp_zero_int_bool_ref val)
                                 (jmp_cond (CC.NZ) taken not_taken))))
 
+;; Optimizations for a conditional jump on an and with a power of two
 (rule 3 (lower_branch (brz (icmp (IntCC.Equal) (band x @ (value_type op_ty) (power_of_two_const y)) (u64_from_iconst 0)) _) (two_targets taken not_taken))
       (emit_side_effect
         (with_flags_side_effect (x64_bt_with_flags_paired op_ty x (Imm8Reg.Imm8 y))
@@ -3107,6 +3111,37 @@
       (emit_side_effect
         (with_flags_side_effect (x64_bt_with_flags_paired op_ty x (Imm8Reg.Imm8 y))
                                 (jmp_cond (CC.B) taken not_taken))))
+
+;; Optimization for a conditional jump on band_not
+(rule 3 (lower_branch (brz (icmp (IntCC.Equal) (has_type (and (ty_32_or_64 op_ty) (use_bmi1 $true)) (band_not x y)) (u64_from_iconst 0)) _) (two_targets taken not_taken))
+      (emit_side_effect
+        (with_flags_side_effect (produces_flags_ignore (x64_andn_with_flags_paired op_ty y x))
+                                (jmp_cond (CC.NZ) taken not_taken))))
+
+(rule 3 (lower_branch (brz (icmp (IntCC.NotEqual) (has_type (and (ty_32_or_64 op_ty) (use_bmi1 $true)) (band_not x y)) (u64_from_iconst 0)) _) (two_targets taken not_taken))
+      (emit_side_effect
+        (with_flags_side_effect (produces_flags_ignore (x64_andn_with_flags_paired op_ty y x))
+                                (jmp_cond (CC.Z) taken not_taken))))
+
+(rule 3 (lower_branch (brnz (icmp (IntCC.Equal) (has_type (and (ty_32_or_64 op_ty) (use_bmi1 $true)) (band_not x y)) (u64_from_iconst 0)) _) (two_targets taken not_taken))
+      (emit_side_effect
+        (with_flags_side_effect (produces_flags_ignore (x64_andn_with_flags_paired op_ty y x))
+                                (jmp_cond (CC.Z) taken not_taken))))
+
+(rule 3 (lower_branch (brnz (icmp (IntCC.NotEqual) (has_type (and (ty_32_or_64 op_ty) (use_bmi1 $true)) (band_not x y)) (u64_from_iconst 0)) _) (two_targets taken not_taken))
+      (emit_side_effect
+        (with_flags_side_effect (produces_flags_ignore (x64_andn_with_flags_paired op_ty y x))
+                                (jmp_cond (CC.NZ) taken not_taken))))
+
+(rule 3 (lower_branch (brz (has_type (and (ty_32_or_64 op_ty) (use_bmi1 $true)) (band_not x y)) _) (two_targets taken not_taken))
+      (emit_side_effect
+        (with_flags_side_effect (produces_flags_ignore (x64_andn_with_flags_paired op_ty y x))
+                                (jmp_cond (CC.Z) taken not_taken))))
+
+(rule 3 (lower_branch (brnz (has_type (and (ty_32_or_64 op_ty) (use_bmi1 $true)) (band_not x y)) _) (two_targets taken not_taken))
+      (emit_side_effect
+        (with_flags_side_effect (produces_flags_ignore (x64_andn_with_flags_paired op_ty y x))
+                                (jmp_cond (CC.NZ) taken not_taken))))
 
 ;; Compare an I128 value to zero, returning a flags result suitable for making a
 ;; jump decision. The comparison is implemented as `(hi == 0) && (low == 0)`,
