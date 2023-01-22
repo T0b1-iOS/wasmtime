@@ -178,6 +178,12 @@
                (src2 GprMem)
                (dst WritableGpr))
 
+       ;; res = and(src1, not(src2))
+       (Andn (size OperandSize) ;; 4 or 8
+              (src1 Gpr)
+              (src2 GprMem)
+              (dst WritableGpr)) 
+
        ;; =========================================
        ;; Conditional moves.
 
@@ -2036,6 +2042,14 @@
       (let ((dst WritableGpr (temp_writable_gpr))
             (size OperandSize (operand_size_of_type_32_64 ty))
             (_ Unit (emit (MInst.Crc32 size src1 src2 dst))))
+        dst))
+
+;; Helper for creating andn instructions
+(decl x64_andn (Type Gpr GprMem) Gpr)
+(rule (x64_andn ty src1 src2)
+      (let ((dst WritableGpr (temp_writable_gpr))
+            (size OperandSize (operand_size_of_type_32_64 ty))
+            (_ Unit (emit (MInst.Andn size src1 src2 dst))))
         dst))
 
 ;; Helper for creating `MInst.CmpRmiR` instructions.
