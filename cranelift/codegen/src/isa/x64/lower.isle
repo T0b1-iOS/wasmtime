@@ -3115,32 +3115,32 @@
 ;; Optimization for a conditional jump on band_not
 (rule 3 (lower_branch (brz (icmp (IntCC.Equal) (has_type (and (ty_32_or_64 op_ty) (use_bmi1 $true)) (band_not x y)) (u64_from_iconst 0)) _) (two_targets taken not_taken))
       (emit_side_effect
-        (with_flags_side_effect (produces_flags_ignore (x64_andn_with_flags_paired op_ty y x))
+        (with_flags_side_effect (produces_flags_ignore (x64_andn_with_flags_paired op_ty y (put_in_gpr x)))
                                 (jmp_cond (CC.NZ) taken not_taken))))
 
 (rule 3 (lower_branch (brz (icmp (IntCC.NotEqual) (has_type (and (ty_32_or_64 op_ty) (use_bmi1 $true)) (band_not x y)) (u64_from_iconst 0)) _) (two_targets taken not_taken))
       (emit_side_effect
-        (with_flags_side_effect (produces_flags_ignore (x64_andn_with_flags_paired op_ty y x))
+        (with_flags_side_effect (produces_flags_ignore (x64_andn_with_flags_paired op_ty y (put_in_gpr x)))
                                 (jmp_cond (CC.Z) taken not_taken))))
 
 (rule 3 (lower_branch (brnz (icmp (IntCC.Equal) (has_type (and (ty_32_or_64 op_ty) (use_bmi1 $true)) (band_not x y)) (u64_from_iconst 0)) _) (two_targets taken not_taken))
       (emit_side_effect
-        (with_flags_side_effect (produces_flags_ignore (x64_andn_with_flags_paired op_ty y x))
+        (with_flags_side_effect (produces_flags_ignore (x64_andn_with_flags_paired op_ty y (put_in_gpr x)))
                                 (jmp_cond (CC.Z) taken not_taken))))
 
 (rule 3 (lower_branch (brnz (icmp (IntCC.NotEqual) (has_type (and (ty_32_or_64 op_ty) (use_bmi1 $true)) (band_not x y)) (u64_from_iconst 0)) _) (two_targets taken not_taken))
       (emit_side_effect
-        (with_flags_side_effect (produces_flags_ignore (x64_andn_with_flags_paired op_ty y x))
+        (with_flags_side_effect (produces_flags_ignore (x64_andn_with_flags_paired op_ty y (put_in_gpr x)))
                                 (jmp_cond (CC.NZ) taken not_taken))))
 
 (rule 3 (lower_branch (brz (has_type (and (ty_32_or_64 op_ty) (use_bmi1 $true)) (band_not x y)) _) (two_targets taken not_taken))
       (emit_side_effect
-        (with_flags_side_effect (produces_flags_ignore (x64_andn_with_flags_paired op_ty y x))
+        (with_flags_side_effect (produces_flags_ignore (x64_andn_with_flags_paired op_ty y (put_in_gpr x)))
                                 (jmp_cond (CC.Z) taken not_taken))))
 
 (rule 3 (lower_branch (brnz (has_type (and (ty_32_or_64 op_ty) (use_bmi1 $true)) (band_not x y)) _) (two_targets taken not_taken))
       (emit_side_effect
-        (with_flags_side_effect (produces_flags_ignore (x64_andn_with_flags_paired op_ty y x))
+        (with_flags_side_effect (produces_flags_ignore (x64_andn_with_flags_paired op_ty y (put_in_gpr x)))
                                 (jmp_cond (CC.NZ) taken not_taken))))
 
 ;; Compare an I128 value to zero, returning a flags result suitable for making a
