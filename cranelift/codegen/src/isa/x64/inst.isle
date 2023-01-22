@@ -182,7 +182,12 @@
        (Andn (size OperandSize) ;; 4 or 8
               (src1 Gpr)
               (src2 GprMem)
-              (dst WritableGpr)) 
+              (dst WritableGpr))
+       
+       ;; Tests whether a bit is set in a bitfield
+       (Bittest (size OperandSize) ;; 2, 4 or 8
+              (field GprMem)
+              (idx Imm8Gpr))
 
        ;; =========================================
        ;; Conditional moves.
@@ -2043,6 +2048,14 @@
             (size OperandSize (operand_size_of_type_32_64 ty))
             (_ Unit (emit (MInst.Crc32 size src1 src2 dst))))
         dst))
+
+;; Helper for creating bt instructions
+(decl x64_bt_with_flags_paired (Type GprMem Imm8Gpr) ProducesFlags)
+(rule (x64_bt_with_flags_paired (ty_16_32_or_64 ty) field idx)
+      (ProducesFlags.ProducesFlagsSideEffect
+            (MInst.Bittest (raw_operand_size_of_type ty)
+                  field
+                  idx)))
 
 ;; Helper for creating andn instructions
 (decl x64_andn (Type Gpr GprMem) Gpr)

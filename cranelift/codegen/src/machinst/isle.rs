@@ -284,6 +284,15 @@ macro_rules! isle_lower_prelude_methods {
             }
         }
 
+        fn power_of_two_const(&mut self, val: Value) -> Option<u8> {
+            let inst = self.def_inst(val)?;
+            let constant = self.lower_ctx.get_constant(inst)?;
+            if !constant.is_power_of_two() {
+                return None;
+            }
+            Some(constant.trailing_zeros() as u8)
+        }
+
         fn avoid_div_traps(&mut self, _: Type) -> Option<()> {
             if self.backend.flags().avoid_div_traps() {
                 Some(())

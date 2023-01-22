@@ -212,6 +212,15 @@ macro_rules! isle_common_prelude_methods {
         }
 
         #[inline]
+        fn ty_16_32_or_64(&mut self, ty: Type) -> Option<Type> {
+            if ty.bits() == 16 || ty.bits() == 32 || ty.bits() == 64 {
+                Some(ty)
+            } else {
+                None
+            }
+        }
+
+        #[inline]
         fn ty_8_or_16(&mut self, ty: Type) -> Option<Type> {
             if ty.bits() == 8 || ty.bits() == 16 {
                 Some(ty)

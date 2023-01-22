@@ -230,6 +230,10 @@
 (decl pure partial zero_value (Value) Value)
 (extern constructor zero_value zero_value)
 
+;; Match a constant that is a power of 2 and return the log2 of it
+(decl power_of_two_const (u8) Value)
+(extern extractor power_of_two_const power_of_two_const)
+
 ;; Match a sinkable instruction from a value operand.
 (decl pure partial is_sinkable_inst (Value) Inst)
 (extern constructor is_sinkable_inst is_sinkable_inst)

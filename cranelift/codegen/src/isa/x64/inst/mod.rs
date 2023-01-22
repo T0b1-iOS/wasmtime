@@ -123,7 +123,8 @@ impl Inst {
             | Inst::MachOTlsGetAddr { .. }
             | Inst::CoffTlsGetAddr { .. }
             | Inst::Unwind { .. }
-            | Inst::DummyUse { .. } => smallvec![],
+            | Inst::DummyUse { .. }
+            | Inst::Bittest { .. } => smallvec![],
 
             Inst::UnaryRmR { op, .. } => op.available_from(),
 
@@ -1480,6 +1481,20 @@ impl PrettyPrint for Inst {
                 )
             }
 
+            Inst::Bittest { size, field, idx } => {
+                let field = field.pretty_print(size.to_bytes(), allocs);
+                let idx = match idx.clone().to_imm8_reg() {
+                    Imm8Reg::Reg { reg } => pretty_print_reg(reg, size.to_bytes(), allocs),
+                    Imm8Reg::Imm8 { imm } => format!("${}", imm)
+                };
+                format!(
+                    "{} {}, {}",
+                    ljustify2("bt".to_string(), suffix_bwlq(*size)),
+                    field,
+                    idx
+                )
+            }
+
             Inst::Andn { size, src1, src2, dst } => {
                 let src1 = pretty_print_reg(src1.to_reg(), size.to_bytes(), allocs);
                 let dst = pretty_print_reg(dst.to_reg().to_reg(), size.to_bytes(), allocs);
@@ -2144,6 +2159,12 @@ fn x64_get_operands<F: Fn(VReg) -> VReg>(inst: &Inst, collector: &mut OperandCol
             collector.reg_use(src1.to_reg());
             collector.reg_def(dst.to_writable_reg());
             src2.get_operands(collector);
+        }
+        Inst::Bittest { field, idx , .. } => {
+            field.get_operands(collector);
+            if let Imm8Reg::Reg { reg } = idx.clone().to_imm8_reg() {
+                collector.reg_use(reg);
+            }
         }
         Inst::Cmove {
             consequent,
