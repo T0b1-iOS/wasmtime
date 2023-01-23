@@ -1635,28 +1635,28 @@
       (x64_shr $I32 (x64_not $I64 x) (Imm8Reg.Imm8 31)))
 
 ;; Optimization for `band` with a power of two followed by a check against 0
-(rule 3 (lower (has_type $I8 (icmp (IntCC.Equal) (band x @ (value_type op_ty) (power_of_two_const y)) (u64_from_iconst 0))))
+(rule 3 (lower (has_type $I8 (icmp (IntCC.Equal) (band x @ (value_type (ty_16_32_or_64 op_ty)) (power_of_two_const y)) (u64_from_iconst 0))))
       (with_flags (x64_bt_with_flags_paired op_ty x (Imm8Reg.Imm8 y)) (x64_setcc (CC.NB))))
 
-(rule 3 (lower (has_type $I8 (icmp (IntCC.NotEqual) (band x @ (value_type op_ty) (power_of_two_const y)) (u64_from_iconst 0))))
+(rule 3 (lower (has_type $I8 (icmp (IntCC.NotEqual) (band x @ (value_type (ty_16_32_or_64 op_ty)) (power_of_two_const y)) (u64_from_iconst 0))))
       (with_flags (x64_bt_with_flags_paired op_ty x (Imm8Reg.Imm8 y)) (x64_setcc (CC.B))))
 
-(rule 3 (lower (has_type $I8 (icmp (IntCC.Equal) (u64_from_iconst 0) (band x @ (value_type op_ty) (power_of_two_const y)))))
+(rule 3 (lower (has_type $I8 (icmp (IntCC.Equal) (u64_from_iconst 0) (band x @ (value_type (ty_16_32_or_64 op_ty)) (power_of_two_const y)))))
       (with_flags (x64_bt_with_flags_paired op_ty x (Imm8Reg.Imm8 y)) (x64_setcc (CC.NB))))
 
-(rule 3 (lower (has_type $I8 (icmp (IntCC.NotEqual) (u64_from_iconst 0) (band x @ (value_type op_ty) (power_of_two_const y)))))
+(rule 3 (lower (has_type $I8 (icmp (IntCC.NotEqual) (u64_from_iconst 0) (band x @ (value_type (ty_16_32_or_64 op_ty)) (power_of_two_const y)))))
       (with_flags (x64_bt_with_flags_paired op_ty x (Imm8Reg.Imm8 y)) (x64_setcc (CC.B))))
 
-(rule 2 (lower (has_type $I8 (icmp (IntCC.Equal) (band (power_of_two_const y) x @ (value_type op_ty)) (u64_from_iconst 0))))
+(rule 2 (lower (has_type $I8 (icmp (IntCC.Equal) (band (power_of_two_const y) x @ (value_type (ty_16_32_or_64 op_ty))) (u64_from_iconst 0))))
       (with_flags (x64_bt_with_flags_paired op_ty x (Imm8Reg.Imm8 y)) (x64_setcc (CC.NB))))
 
-(rule 2 (lower (has_type $I8 (icmp (IntCC.NotEqual) (band (power_of_two_const y) x @ (value_type op_ty)) (u64_from_iconst 0))))
+(rule 2 (lower (has_type $I8 (icmp (IntCC.NotEqual) (band (power_of_two_const y) x @ (value_type (ty_16_32_or_64 op_ty))) (u64_from_iconst 0))))
       (with_flags (x64_bt_with_flags_paired op_ty x (Imm8Reg.Imm8 y)) (x64_setcc (CC.B))))
 
-(rule 2 (lower (has_type $I8 (icmp (IntCC.Equal) (u64_from_iconst 0) (band (power_of_two_const y) x @ (value_type op_ty)))))
+(rule 2 (lower (has_type $I8 (icmp (IntCC.Equal) (u64_from_iconst 0) (band (power_of_two_const y) x @ (value_type (ty_16_32_or_64 op_ty))))))
       (with_flags (x64_bt_with_flags_paired op_ty x (Imm8Reg.Imm8 y)) (x64_setcc (CC.NB))))
 
-(rule 2 (lower (has_type $I8 (icmp (IntCC.NotEqual) (u64_from_iconst 0) (band (power_of_two_const y) x @ (value_type op_ty)))))
+(rule 2 (lower (has_type $I8 (icmp (IntCC.NotEqual) (u64_from_iconst 0) (band (power_of_two_const y) x @ (value_type (ty_16_32_or_64 op_ty))))))
       (with_flags (x64_bt_with_flags_paired op_ty x (Imm8Reg.Imm8 y)) (x64_setcc (CC.B))))
 
 ;; For XMM-held values, we lower to `PCMP*` instructions, sometimes more than
@@ -3071,43 +3071,43 @@
                                 (jmp_cond (CC.NZ) taken not_taken))))
 
 ;; Optimizations for a conditional jump on an and with a power of two
-(rule 3 (lower_branch (brz (icmp (IntCC.Equal) (band x @ (value_type op_ty) (power_of_two_const y)) (u64_from_iconst 0)) _) (two_targets taken not_taken))
+(rule 3 (lower_branch (brz (icmp (IntCC.Equal) (band x @ (value_type (ty_16_32_or_64 op_ty)) (power_of_two_const y)) (u64_from_iconst 0)) _) (two_targets taken not_taken))
       (emit_side_effect
         (with_flags_side_effect (x64_bt_with_flags_paired op_ty x (Imm8Reg.Imm8 y))
                                 (jmp_cond (CC.B) taken not_taken))))
 
-(rule 3 (lower_branch (brnz (icmp (IntCC.Equal) (band x @ (value_type op_ty) (power_of_two_const y)) (u64_from_iconst 0)) _) (two_targets taken not_taken))
+(rule 3 (lower_branch (brnz (icmp (IntCC.Equal) (band x @ (value_type (ty_16_32_or_64 op_ty)) (power_of_two_const y)) (u64_from_iconst 0)) _) (two_targets taken not_taken))
       (emit_side_effect
         (with_flags_side_effect (x64_bt_with_flags_paired op_ty x (Imm8Reg.Imm8 y))
                                 (jmp_cond (CC.NB) taken not_taken))))
 
-(rule 3 (lower_branch (brz (icmp (IntCC.NotEqual) (band x @ (value_type op_ty) (power_of_two_const y)) (u64_from_iconst 0)) _) (two_targets taken not_taken))
+(rule 3 (lower_branch (brz (icmp (IntCC.NotEqual) (band x @ (value_type (ty_16_32_or_64 op_ty)) (power_of_two_const y)) (u64_from_iconst 0)) _) (two_targets taken not_taken))
       (emit_side_effect
         (with_flags_side_effect (x64_bt_with_flags_paired op_ty x (Imm8Reg.Imm8 y))
                                 (jmp_cond (CC.NB) taken not_taken))))
 
-(rule 3 (lower_branch (brnz (icmp (IntCC.NotEqual) (band x @ (value_type op_ty) (power_of_two_const y)) (u64_from_iconst 0)) _) (two_targets taken not_taken))
+(rule 3 (lower_branch (brnz (icmp (IntCC.NotEqual) (band x @ (value_type (ty_16_32_or_64 op_ty)) (power_of_two_const y)) (u64_from_iconst 0)) _) (two_targets taken not_taken))
       (emit_side_effect
         (with_flags_side_effect (x64_bt_with_flags_paired op_ty x (Imm8Reg.Imm8 y))
                                 (jmp_cond (CC.B) taken not_taken))))
 
 ;; Sometimes the icmp gets optimized out
-(rule 4 (lower_branch (brz (band x @ (value_type op_ty) (power_of_two_const y)) _) (two_targets taken not_taken))
+(rule 4 (lower_branch (brz (band x @ (value_type (ty_16_32_or_64 op_ty)) (power_of_two_const y)) _) (two_targets taken not_taken))
       (emit_side_effect
         (with_flags_side_effect (x64_bt_with_flags_paired op_ty x (Imm8Reg.Imm8 y))
                                 (jmp_cond (CC.NB) taken not_taken))))
 
-(rule 4 (lower_branch (brnz (band x @ (value_type op_ty) (power_of_two_const y)) _) (two_targets taken not_taken))
+(rule 4 (lower_branch (brnz (band x @ (value_type (ty_16_32_or_64 op_ty)) (power_of_two_const y)) _) (two_targets taken not_taken))
       (emit_side_effect
         (with_flags_side_effect (x64_bt_with_flags_paired op_ty x (Imm8Reg.Imm8 y))
                                 (jmp_cond (CC.B) taken not_taken))))
 
-(rule 3 (lower_branch (brz (band (power_of_two_const y) x @ (value_type op_ty)) _) (two_targets taken not_taken))
+(rule 3 (lower_branch (brz (band (power_of_two_const y) x @ (value_type (ty_16_32_or_64 op_ty))) _) (two_targets taken not_taken))
       (emit_side_effect
         (with_flags_side_effect (x64_bt_with_flags_paired op_ty x (Imm8Reg.Imm8 y))
                                 (jmp_cond (CC.NB) taken not_taken))))
 
-(rule 3 (lower_branch (brnz (band (power_of_two_const y) x @ (value_type op_ty)) _) (two_targets taken not_taken))
+(rule 3 (lower_branch (brnz (band (power_of_two_const y) x @ (value_type (ty_16_32_or_64 op_ty))) _) (two_targets taken not_taken))
       (emit_side_effect
         (with_flags_side_effect (x64_bt_with_flags_paired op_ty x (Imm8Reg.Imm8 y))
                                 (jmp_cond (CC.B) taken not_taken))))
