@@ -1299,7 +1299,7 @@ pub(crate) fn emit(
                     }
                 },
                 RegMem::Mem { addr } => {
-                    let amode = addr.finalize(state, sink);
+                    let amode = addr.finalize(state, sink).with_allocs(allocs);
                     match idx.clone().to_imm8_reg() {
                         Imm8Reg::Reg { reg: idx_reg } => {
                             let idx_reg = allocs.next(idx_reg);
