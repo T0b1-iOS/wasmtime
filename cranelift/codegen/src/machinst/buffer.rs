@@ -386,10 +386,12 @@ impl<I: VCodeInst> MachBuffer<I> {
         self.data.len() as CodeOffset
     }
 
+    /// Get a byte of the buffer at an offset
     pub fn byte_at(&self, off: CodeOffset) -> u8 {
         self.data[off as usize]
     }
 
+    /// Remove `amount` bytes from the end of the buffer
     pub fn pop_bytes(&mut self, amount: usize) {
         self.data.truncate(self.data.len() - amount);
     }
