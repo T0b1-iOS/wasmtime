@@ -26,4 +26,5 @@ block0(v0: i8, v1: i8):
 ; run: %iaddcout_i8_c(100, -20) == 0
 ; run: %iaddcout_i8_c(100, 28) == 1
 ; run: %iaddcout_i8_c(-128, -128) == 1
+; run: %iaddcout_i8_c(127, 1) == 0
 

@@ -992,6 +992,10 @@
     (MAdd)
     ;; Multiply-sub
     (MSub)
+    ;; Unsigned-Multiply-add
+    (UMAddL)
+    ;; Signed-Multiply-add
+    (SMAddL)
 ))
 
 (type MoveWideOp
@@ -1687,6 +1691,9 @@
 (decl pure partial lshl_from_u64 (Type u64) ShiftOpAndAmt)
 (extern constructor lshl_from_u64 lshl_from_u64)
 
+(decl pure partial ashr_from_u64 (Type u64) ShiftOpAndAmt)
+(extern constructor ashr_from_u64 ashr_from_u64)
+
 (decl integral_ty (Type) Type)
 (extern extractor integral_ty integral_ty)
 
@@ -1909,6 +1916,15 @@
        (MInst.AluRRRShift (ALUOp.SubS) size (writable_zero_reg)
         src1 src2 shift)))
 
+;; Helper for emitting `cmp` instructions, setting flags, with a arithmetic right-shifted
+;; second operand register.
+(decl cmp_rr_shift_asr (OperandSize Reg Reg u64) ProducesFlags)
+(rule (cmp_rr_shift_asr size src1 src2 shift_amount)
+      (if-let shift (ashr_from_u64 $I64 shift_amount))
+      (ProducesFlags.ProducesFlagsSideEffect
+       (MInst.AluRRRShift (ALUOp.SubS) size (writable_zero_reg)
+        src1 src2 shift)))
+
 ;; Helper for emitting `MInst.AluRRRExtend` instructions.
 (decl alu_rrr_extend (ALUOp Type Reg Reg ExtendOp) Reg)
 (rule (alu_rrr_extend op ty src1 src2 extend)
@@ -1930,6 +1946,14 @@
       (let ((dst WritableReg (temp_writable_reg $I64))
             (_ Unit (emit (MInst.AluRRRR op (operand_size ty) dst src1 src2 src3))))
         dst))
+
+;; Helper for emitting paired `MInst.AluRRR` instructions
+(decl alu_rrr_with_flags_paired (Type Reg Reg ALUOp) ProducesFlags)
+(rule (alu_rrr_with_flags_paired ty src1 src2 alu_op)
+      (let ((dst WritableReg (temp_writable_reg $I64)))
+        (ProducesFlags.ProducesFlagsReturnsResultWithConsumer
+         (MInst.AluRRR alu_op (operand_size ty) dst src1 src2)
+         dst)))
 
 ;; Helper for emitting `MInst.BitRR` instructions.
 (decl bit_rr (BitOp Type Reg) Reg)
@@ -2346,6 +2370,14 @@
 
 (decl msub (Type Reg Reg Reg) Reg)
 (rule (msub ty x y z) (alu_rrrr (ALUOp3.MSub) ty x y z))
+
+;; Helpers for generating `umaddl` instructions
+(decl umaddl (Reg Reg Reg) Reg)
+(rule (umaddl x y z) (alu_rrrr (ALUOp3.UMAddL) $I32 x y z))
+
+;; Helpers for generating `smaddl` instructions
+(decl smaddl (Reg Reg Reg) Reg)
+(rule (smaddl x y z) (alu_rrrr (ALUOp3.SMAddL) $I32 x y z))
 
 ;; Helper for generating `uqadd` instructions.
 (decl uqadd (Reg Reg VectorSize) Reg)

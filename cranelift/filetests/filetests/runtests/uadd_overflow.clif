@@ -1,6 +1,7 @@
 test interpret
 test run
 target x86_64
+target aarch64
 
 function %uaddof_i64(i64, i64) -> i64 {
 block0(v0: i64,v1: i64):
@@ -46,6 +47,7 @@ block0(v0: i8, v1: i8):
 ; run: %uaddof_i8(100, -20) == 80
 ; run: %uaddof_i8(100, 28) == -128
 ; run: %uaddof_i8(-128, -128) == 0
+; run: %uaddof_i8(127, 1) == 0x80
 
 function %uaddof_i8b(i8, i8) -> i8 {
 block0(v0: i8, v1: i8):
@@ -57,6 +59,7 @@ block0(v0: i8, v1: i8):
 ; run: %uaddof_i8b(100, -20) == 1
 ; run: %uaddof_i8b(100, 28) == 0
 ; run: %uaddof_i8b(-128, -128) == 1
+; run: %uaddof_i8b(127, 1) == 0
 
 function %uaddof_i16(i16, i16) -> i16 {
 block0(v0: i16, v1: i16):
