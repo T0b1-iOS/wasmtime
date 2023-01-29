@@ -2048,47 +2048,54 @@ pub(crate) fn define(
         .operands_out(vec![a, of_out]),
     );
 
-    ig.push(
-        Inst::new(
-            "umul_overflow",
-            r#"
-        Multiply integers unsigned with overflow out.
-
-        ```text
-            a &= x * y \pmod 2^B \\
-            of &= x * y > 2^B
-        ```
-
-        Polymorphic over all scalar integer types, but does not support vector
-        types.
-        "#,
-            &formats.binary,
-        )
-        .operands_in(vec![x, y])
-        .operands_out(vec![a, of_out]),
-    );
-
-    ig.push(
-        Inst::new(
-            "smul_overflow",
-            r#"
-        Multiply integers signed with overflow out.
-        ``of`` is set when the multiplication over- or underflowed.
-
-        Polymorphic over all scalar integer types, but does not support vector
-        types.
-        "#,
-            &formats.binary,
-        )
-        .operands_in(vec![x, y])
-        .operands_out(vec![a, of_out]),
-    );
-
     {
-        let x = &Operand::new("x", NarrowInt);
-        let y = &Operand::new("y", NarrowInt);
-        let lo = &Operand::new("lo", NarrowInt);
-        let hi = &Operand::new("hi", NarrowInt);
+        let NarrowScalar = &TypeVar::new(
+            "NarrowScalar",
+            "A scalar integer type up to 64 bits",
+            TypeSetBuilder::new().ints(Interval::All).build(),
+        );
+        let x = &Operand::new("x", NarrowScalar);
+        let y = &Operand::new("y", NarrowScalar);
+        let a = &Operand::new("a", NarrowScalar);
+
+        ig.push(
+            Inst::new(
+                "umul_overflow",
+                r#"
+            Multiply integers unsigned with overflow out.
+
+            ```text
+                a &= x * y \pmod 2^B \\
+                of &= x * y > 2^B
+            ```
+
+            Polymorphic over all scalar integer types except i128, but does not support vector
+            types.
+            "#,
+                &formats.binary,
+            )
+            .operands_in(vec![x, y])
+            .operands_out(vec![a, of_out]),
+        );
+
+        ig.push(
+            Inst::new(
+                "smul_overflow",
+                r#"
+            Multiply integers signed with overflow out.
+            ``of`` is set when the multiplication over- or underflowed.
+
+            Polymorphic over all scalar integer types except i128, but does not support vector
+            types.
+            "#,
+                &formats.binary,
+            )
+            .operands_in(vec![x, y])
+            .operands_out(vec![a, of_out]),
+        );
+
+        let lo = &Operand::new("lo", NarrowScalar);
+        let hi = &Operand::new("hi", NarrowScalar);
         ig.push(
             Inst::new(
                 "umullohi",
