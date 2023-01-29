@@ -1,6 +1,7 @@
 test interpret
 test run
 target x86_64
+target aarch64
 
 function %umullohi_i16lo(i16, i16) -> i16 {
 block0(v0: i16,v1: i16):
@@ -25,6 +26,14 @@ block0(v0: i16,v1: i16):
 
 ; run: %umullohi_i16hi(2, 4) == 0
 ; run: %umullohi_i16hi(65535, 65535) == 65534
+; run: %umullohi_i16hi(0, 0) == 0
+; run: %umullohi_i16hi(0, 1) == 0
+; run: %umullohi_i16hi(1, -1) == 0
+; run: %umullohi_i16hi(2, 2) == 0
+; run: %umullohi_i16hi(0x7FFF, 0x7FFF) == 0x3FFF
+; run: %umullohi_i16hi(0x8000, 0x7FFF) == 0x3FFF
+; run: %umullohi_i16hi(0x0123, 0xFEDC) == 0x0121
+; run: %umullohi_i16hi(0xC0FF, 0xDECA) == 0xA7F5
 
 function %umullohi_i32lo(i32, i32) -> i32 {
 block0(v0: i32,v1: i32):
@@ -49,6 +58,14 @@ block0(v0: i32,v1: i32):
 
 ; run: %umullohi_i32hi(500, 700) == 0
 ; run: %umullohi_i32hi(4294967295, 4294967295) == 4294967294
+; run: %umullohi_i32hi(0, 0) == 0
+; run: %umullohi_i32hi(0, 1) == 0
+; run: %umullohi_i32hi(1, -1) == 0
+; run: %umullohi_i32hi(2, 2) == 0
+; run: %umullohi_i32hi(0x7FFFFFFF, 0x7FFFFFFF) == 0x3FFFFFFF
+; run: %umullohi_i32hi(0x80000000, 0x7FFFFFFF) == 0x3FFFFFFF
+; run: %umullohi_i32hi(0x01234567, 0xFEDCBA98) == 0x0121FA00
+; run: %umullohi_i32hi(0xC0FFEEEE, 0xDECAFFFF) == 0xA7F6FC24
 
 function %umullohi_i64lo(i64, i64) -> i64 {
 block0(v0: i64,v1: i64):
@@ -73,3 +90,11 @@ block0(v0: i64,v1: i64):
 
 ; run: %umullohi_i64hi(4294967295, 4294967295) == 0
 ; run: %umullohi_i64hi(18446744073709551615, 18446744073709551615) == 18446744073709551614
+; run: %umullohi_i64hi(0, 0) == 0
+; run: %umullohi_i64hi(0, 1) == 0
+; run: %umullohi_i64hi(1, -1) == 0
+; run: %umullohi_i64hi(2, 2) == 0
+; run: %umullohi_i64hi(0x7FFFFFFF_FFFFFFFF, 0x7FFFFFFF_FFFFFFFF) == 0x3FFFFFFFFFFFFFFF
+; run: %umullohi_i64hi(0x80000000_00000000, 0x7FFFFFFF_FFFFFFFF) == 0x3FFFFFFFFFFFFFFF
+; run: %umullohi_i64hi(0x01234567_89ABCDEF, 0xFEDCBA98_76543210) == 0x0121FA00AD77D742
+; run: %umullohi_i64hi(0xC0FFEEEE_C0FFEEEE, 0xDECAFFFF_DECAFFFF) == 0xA7F6FC2569A8095A

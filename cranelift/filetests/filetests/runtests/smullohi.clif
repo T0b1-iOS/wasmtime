@@ -26,6 +26,14 @@ block0(v0: i16,v1: i16):
 ; run: %smullohi_i16hi(-2, -4) == 0
 ; run: %smullohi_i16hi(2, -4) == -1
 ; run: %smullohi_i16hi(32767, 32767) == 16383
+; run: %smullohi_i16hi(0, 0) == 0
+; run: %smullohi_i16hi(0, 1) == 0
+; run: %smullohi_i16hi(1, -1) == 0xFFFF
+; run: %smullohi_i16hi(2, 2) == 0
+; run: %smullohi_i16hi(0x7FFF, 0x7FFF) == 0x3FFF
+; run: %smullohi_i16hi(0x8000, 0x7FFF) == 0xC000
+; run: %smullohi_i16hi(0x0123, 0xFEDC) == 0xFFFE
+; run: %smullohi_i16hi(0xC0FF, 0xDECA) == 0x082C
 
 function %smullohi_i32lo(i32, i32) -> i32 {
 block0(v0: i32,v1: i32):
@@ -51,6 +59,14 @@ block0(v0: i32,v1: i32):
 ; run: %smullohi_i32hi(-500, -700) == 0
 ; run: %smullohi_i32hi(500, -700) == -1
 ; run: %smullohi_i32hi(2147483647, 2147483647) == 1073741823
+; run: %smullohi_i32hi(0, 0) == 0
+; run: %smullohi_i32hi(0, 1) == 0
+; run: %smullohi_i32hi(1, -1) == 0xFFFFFFFF
+; run: %smullohi_i32hi(2, 2) == 0
+; run: %smullohi_i32hi(0x7FFFFFFF, 0x7FFFFFFF) == 0x3FFFFFFF
+; run: %smullohi_i32hi(0x80000000, 0x7FFFFFFF) == 0xC0000000
+; run: %smullohi_i32hi(0x01234567, 0xFEDCBA98) == 0xFFFEB499
+; run: %smullohi_i32hi(0xC0FFEEEE, 0xDECAFFFF) == 0x082C0D37
 
 function %smullohi_i64lo(i64, i64) -> i64 {
 block0(v0: i64,v1: i64):
@@ -76,3 +92,11 @@ block0(v0: i64,v1: i64):
 ; run: %smullohi_i64hi(-4294967295, -4294967295) == 0
 ; run: %smullohi_i64hi(4294967295, -4294967295) == -1
 ; run: %smullohi_i64hi(9223372036854775807, 9223372036854775807) == 4611686018427387903
+; run: %smullohi_i64hi(0, 0) == 0
+; run: %smullohi_i64hi(0, 1) == 0
+; run: %smullohi_i64hi(1, -1) == -1
+; run: %smullohi_i64hi(2, 2) == 0
+; run: %smullohi_i64hi(0x7FFFFFFF_FFFFFFFF, 0x7FFFFFFF_FFFFFFFF) == 0x3FFFFFFF_FFFFFFFF
+; run: %smullohi_i64hi(0x80000000_00000000, 0x7FFFFFFF_FFFFFFFF) == 0xC0000000_00000000
+; run: %smullohi_i64hi(0x01234567_89ABCDEF, 0xFEDCBA98_76543210) == 0xFFFEB499_23CC0953
+; run: %smullohi_i64hi(0xC0FFEEEE_C0FFEEEE, 0xDECAFFFF_DECAFFFF) == 0x082C0D36_C9DD1A6D

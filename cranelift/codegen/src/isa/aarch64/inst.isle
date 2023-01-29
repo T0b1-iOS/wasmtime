@@ -2580,6 +2580,9 @@
 (decl orr_imm (Type Reg ImmLogic) Reg)
 (rule (orr_imm ty x y) (alu_rr_imm_logic (ALUOp.Orr) ty x y))
 
+(decl orr_shift (Type Reg Reg ShiftOpAndAmt) Reg)
+(rule (orr_shift ty x y shift) (alu_rrr_shift (ALUOp.Orr) ty x y shift))
+
 (decl orr_vec (Reg Reg VectorSize) Reg)
 (rule (orr_vec x y size) (vec_rrr (VecALUOp.Orr) x y size))
 
