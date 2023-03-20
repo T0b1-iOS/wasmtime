@@ -148,17 +148,17 @@ struct DefaultTimingToken {
 
 /// Accumulated timing information for a single pass.
 #[derive(Default, Copy, Clone)]
-struct PassTime {
+pub struct PassTime {
     /// Total time spent running this pass including children.
-    total: Duration,
+    pub total: Duration,
 
     /// Time spent running in child passes.
-    child: Duration,
+    pub child: Duration,
 }
 
 /// Accumulated timing for all passes.
 pub struct PassTimes {
-    pass: [PassTime; NUM_PASSES],
+    pub pass: [PassTime; NUM_PASSES],
 }
 
 impl PassTimes {
