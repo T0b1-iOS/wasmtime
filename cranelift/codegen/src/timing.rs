@@ -4,7 +4,7 @@
 
 use core::fmt;
 
-pub use self::details::{add_to_current, take_current, PassTimes, TimingToken};
+pub use self::details::{add_to_current, take_current, PassTime, PassTimes, TimingToken};
 
 // Each pass that can be timed is predefined with the `define_passes!` macro. Each pass has a
 // snake_case name and a plain text description used when printing out the timing report.
@@ -21,11 +21,11 @@ macro_rules! define_passes {
     } => {
         #[allow(non_camel_case_types)]
         #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-        enum $enum { $($pass,)+ None}
+        pub enum $enum { $($pass,)+ None}
 
-        const $num_passes: usize = $enum::None as usize;
+        pub const $num_passes: usize = $enum::None as usize;
 
-        const $descriptions: [&str; $num_passes] = [ $($desc),+ ];
+        pub const $descriptions: [&str; $num_passes] = [ $($desc),+ ];
 
         $(
             #[doc=$desc]
@@ -120,17 +120,17 @@ mod details {
 
     /// Accumulated timing information for a single pass.
     #[derive(Default, Copy, Clone)]
-    struct PassTime {
+    pub struct PassTime {
         /// Total time spent running this pass including children.
-        total: Duration,
+        pub total: Duration,
 
         /// Time spent running in child passes.
-        child: Duration,
+        pub child: Duration,
     }
 
     /// Accumulated timing for all passes.
     pub struct PassTimes {
-        pass: [PassTime; NUM_PASSES],
+        pub pass: [PassTime; NUM_PASSES],
     }
 
     impl PassTimes {
