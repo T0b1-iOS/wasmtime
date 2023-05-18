@@ -169,6 +169,46 @@
 (rule 1 (lower (smul_overflow x y @ (value_type $I8)))
       (construct_overflow_op (CC.O) (x64_alurmi_with_flags_paired (AluRmiROpcode.Mul) $I8 x (reg_mem_to_reg_mem_imm (put_in_reg_mem y)))))
 
+;;;; Rules for `umullohi` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(rule (lower (umullohi x y @ (value_type $I16)))
+      (let  ((results ValueRegs (mul_hi $I16 $false x y)))
+            (output_pair      (value_regs_get results 0)
+                              (value_regs_get results 1))
+      ))
+
+(rule (lower (umullohi x y @ (value_type $I32)))
+      (let  ((results ValueRegs (mul_hi $I32 $false x y)))
+            (output_pair      (value_regs_get results 0)
+                              (value_regs_get results 1))
+      ))
+
+(rule (lower (umullohi x y @ (value_type $I64)))
+      (let  ((results ValueRegs (mul_hi $I64 $false x y)))
+            (output_pair      (value_regs_get results 0)
+                              (value_regs_get results 1))
+      ))
+
+;;;; Rules for `smullohi` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(rule (lower (smullohi x y @ (value_type $I16)))
+      (let  ((results ValueRegs (mul_hi $I16 $true x y)))
+            (output_pair      (value_regs_get results 0)
+                              (value_regs_get results 1))
+      ))
+
+(rule (lower (smullohi x y @ (value_type $I32)))
+      (let  ((results ValueRegs (mul_hi $I32 $true x y)))
+            (output_pair      (value_regs_get results 0)
+                              (value_regs_get results 1))
+      ))
+
+(rule (lower (smullohi x y @ (value_type $I64)))
+      (let  ((results ValueRegs (mul_hi $I64 $true x y)))
+            (output_pair      (value_regs_get results 0)
+                              (value_regs_get results 1))
+      ))
+
 ;;;; Rules for `sadd_sat` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (rule (lower (has_type (multi_lane 8 16)

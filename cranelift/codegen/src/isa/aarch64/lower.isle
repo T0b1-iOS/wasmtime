@@ -2828,6 +2828,82 @@
              (value_reg out)
              (value_reg out_of))))
 
+;;; Rules for `umullohi` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(decl mullohi_8_16_select (Type) u64)
+(rule (mullohi_8_16_select $I8) 8)
+(rule (mullohi_8_16_select $I16) 16)
+
+;; uxt{b,h} a_uext, a
+;; uxt{b,h} b_uext, b
+;; mul out_lo, a, b
+;; orr out_hi, xzr, out_lo, LSR #{8,16}
+(rule 0 (lower (has_type (fits_in_16 ty) (umullohi a b)))
+      (let (
+             (a_uext Reg (put_in_reg_zext32 a))
+             (b_uext Reg (put_in_reg_zext32 b))
+             (out_lo Reg (madd ty a_uext b_uext (zero_reg)))
+             (out_hi Reg (orr_shift $I32 (zero_reg) out_lo (lshr_from_u64 $I32 (mullohi_8_16_select ty)))))
+       (output_pair
+             (value_reg out_lo)
+             (value_reg out_hi))))
+
+;; umull out, a, b
+;; orr out_hi, xzr, out, LSR #32
+(rule 1 (lower (has_type $I32 (umullohi a b)))
+      (let (
+            (out Reg (umaddl a b (zero_reg)))
+            (out_hi Reg (orr_shift $I64 (zero_reg) out (lshr_from_u64 $I64 32))))
+       (output_pair
+            (value_reg out)
+            (value_reg out_hi))))
+
+;; mul out_lo, a, b
+;; umulh out_hi, a, b
+(rule 2 (lower (has_type $I64 (umullohi a b)))
+      (let (
+            (out_lo Reg (madd $I64 a b (zero_reg)))
+            (out_hi Reg (umulh $I64 a b)))
+       (output_pair
+            (value_reg out_lo)
+            (value_reg out_hi))))
+
+;;; Rules for `smullohi` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; sxt{b,h} a_sext, a
+;; sxt{b,h} b_sext, b
+;; mul out_lo, a, b
+;; orr out_hi, xzr, out_lo, LSR #{8,16}
+(rule 0 (lower (has_type (fits_in_16 ty) (smullohi a b)))
+      (let (
+             (a_sext Reg (put_in_reg_sext32 a))
+             (b_sext Reg (put_in_reg_sext32 b))
+             (out_lo Reg (madd ty a_sext b_sext (zero_reg)))
+             (out_hi Reg (orr_shift $I32 (zero_reg) out_lo (lshr_from_u64 $I32 (mullohi_8_16_select ty)))))
+       (output_pair
+             (value_reg out_lo)
+             (value_reg out_hi))))
+
+;; smull out, a, b
+;; orr out_hi, xzr, out, LSR #32
+(rule 1 (lower (has_type $I32 (smullohi a b)))
+      (let (
+            (out Reg (smaddl a b (zero_reg)))
+            (out_hi Reg (orr_shift $I64 (zero_reg) out (lshr_from_u64 $I64 32))))
+       (output_pair
+            (value_reg out)
+            (value_reg out_hi))))
+
+;; mul out_lo, a, b
+;; smulh out_hi, a, b
+(rule 2 (lower (has_type $I64 (smullohi a b)))
+      (let (
+            (out_lo Reg (madd $I64 a b (zero_reg)))
+            (out_hi Reg (smulh $I64 a b)))
+       (output_pair
+            (value_reg out_lo)
+            (value_reg out_hi))))
+
 ;;; Rules for `tls_value` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (rule (lower (has_type (tls_model (TlsModel.ElfGd)) (tls_value (symbol_value_data name _ _))))

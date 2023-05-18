@@ -2157,6 +2157,44 @@ pub(crate) fn define(
                 ])
                 .operands_out(vec![Operand::new("a", NarrowScalar), of_out.clone()]),
             );
+
+             ig.push(
+                Inst::new(
+                    "umullohi",
+                    r#"
+                Multiply integers unsigned with low and high out.
+
+                ```text
+                    lo &= x * y \pmod 2^B \\
+                    hi &= x * y & (-1 << B) \\
+                ```
+
+                Supports scalar integer types up to 64 bit.
+                "#,
+                    &formats.binary,
+                )
+                .operands_in(vec![Operand::new("x", NarrowScalar), Operand::new("y", NarrowScalar),])
+                .operands_out(vec![Operand::new("lo", NarrowScalar), Operand::new("hi", NarrowScalar),]),
+            );
+
+            ig.push(
+                Inst::new(
+                    "smullohi",
+                    r#"
+                Multiply integers signed with low and high out.
+
+                ```text
+                    lo &= x * y \pmod 2^B \\
+                    hi &= x * y & (-1 << B) \\
+                ```
+
+                Supports scalar integer types up to 64 bit.
+                "#,
+                    &formats.binary,
+                )
+                .operands_in(vec![Operand::new("x", NarrowScalar), Operand::new("y", NarrowScalar),])
+                .operands_out(vec![Operand::new("lo", NarrowScalar), Operand::new("hi", NarrowScalar),]),
+            );
         }
     }
 

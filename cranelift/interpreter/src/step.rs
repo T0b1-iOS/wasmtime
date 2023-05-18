@@ -758,6 +758,28 @@ where
 
             assign_multiple(&[sum, DataValueExt::bool(carry, false, types::I8)?])
         }
+        Opcode::Umullohi | Opcode::Smullohi => {
+            let double_length = match ctrl_ty.lane_bits() {
+                8 => types::I16,
+                16 => types::I32,
+                32 => types::I64,
+                64 => types::I128,
+                _ => unimplemented!("Unsupported integer length {}", ctrl_ty.bits()),
+            };
+            let (arg0, arg1) = if inst.opcode() == Opcode::Umullohi {
+                let arg0 = arg(0).convert(ValueConversionKind::ZeroExtend(double_length))?;
+                let arg1 = arg(1).convert(ValueConversionKind::ZeroExtend(double_length))?;
+                (arg0, arg1)
+            } else {
+                let arg0 = arg(0).convert(ValueConversionKind::SignExtend(double_length))?;
+                let arg1 = arg(1).convert(ValueConversionKind::SignExtend(double_length))?;
+                (arg0, arg1)
+            };
+
+            let res = arg0.mul(arg1)?;
+
+            assign_multiple(&[res.clone().convert(ValueConversionKind::Exact(ctrl_ty))?, res.convert(ValueConversionKind::ExtractUpper(ctrl_ty))?])
+        }
         Opcode::UaddOverflowTrap => {
             let sum = DataValueExt::add(arg(0), arg(1))?;
             let carry = sum < arg(0) && sum < arg(1);
