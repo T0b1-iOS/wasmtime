@@ -2258,6 +2258,15 @@
        (x64_bswap $I64 (value_regs_get_gpr src 1))
        (x64_bswap $I64 (value_regs_get_gpr src 0))))
 
+;; Rules for `crc32c` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Default reg, reg form
+(rule 0 (lower (crc32c src1 src2 @ (value_type op_ty)))
+      (x64_crc32 op_ty src1 src2))
+
+;; Use with memory operand if possible
+(rule 1 (lower (crc32c src1 (and (sinkable_load src2) (value_type op_ty))))
+      (x64_crc32 op_ty src1 (sink_load_to_gpr_mem src2)))
+
 ;; Rules for `is_null` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Null references are represented by the constant value `0`.

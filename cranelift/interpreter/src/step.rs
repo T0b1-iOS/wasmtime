@@ -807,6 +807,39 @@ where
         Opcode::SshrImm => binary(DataValueExt::sshr, arg(0), imm_as_ctrl_ty()?)?,
         Opcode::Bitrev => unary(DataValueExt::reverse_bits, arg(0))?,
         Opcode::Bswap => unary(DataValueExt::swap_bytes, arg(0))?,
+        Opcode::Crc32c => {
+            let acc = arg(0).into_int_unsigned()? as u32;
+            let val = arg(1);
+
+            let crc32 = |mut acc: u32, val: &[u8]| -> u32 {
+                const POLY: u32 = 0x82F63B78u32;
+                for b in val {
+                    acc = acc ^ *b as u32;
+                    for _ in 0..8 {
+                        if (acc & 1) != 0 {
+                            acc = (acc >> 1) ^ POLY;
+                        } else {
+                            acc = acc >> 1;
+                        };
+                    }
+                }
+
+                return acc;
+            };
+
+            let res = if val.ty().bits() == 64 {
+                let val = (val.into_int_unsigned()? as u64).to_le_bytes();
+
+                let tmp = crc32(acc, &val[0..4]);
+                crc32(tmp, &val[4..8])
+            } else {
+                let val = val.into_int_unsigned()? as u32;
+                let val = (val).to_le_bytes();
+                crc32(acc, &val)
+            };
+
+            assign(DataValueExt::int(res as i128, types::I32)?)
+        }
         Opcode::Clz => unary(DataValueExt::leading_zeros, arg(0))?,
         Opcode::Cls => {
             let count = if arg(0) < DataValueExt::int(0, ctrl_ty)? {

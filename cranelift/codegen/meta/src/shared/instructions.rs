@@ -631,6 +631,7 @@ pub(crate) fn define(
 
     // Operand kind shorthands.
     let i8: &TypeVar = &ValueType::from(LaneType::from(types::Int::I8)).into();
+    let i32: &TypeVar = &ValueType::from(LaneType::from(types::Int::I32)).into();
     let f32_: &TypeVar = &ValueType::from(LaneType::from(types::Float::F32)).into();
     let f64_: &TypeVar = &ValueType::from(LaneType::from(types::Float::F64)).into();
 
@@ -2654,6 +2655,21 @@ pub(crate) fn define(
         )
         .operands_in(vec![Operand::new("x", iSwappable)])
         .operands_out(vec![Operand::new("a", iSwappable)]),
+    );
+
+    ig.push(
+        Inst::new(
+            "crc32c",
+            r#"
+        Accumulate the crc32c (polynomial 0x1EDC6F41) value.
+
+        ``a`` is truncated to 32 bit.
+        The bit order of both ``a`` and ``b`` is reversed for the calculation.
+        "#,
+            &formats.binary,
+        )
+        .operands_in(vec![Operand::new("a", i32_64), Operand::new("v", i32_64)])
+        .operands_out(vec![Operand::new("r", i32)]),
     );
 
     ig.push(
