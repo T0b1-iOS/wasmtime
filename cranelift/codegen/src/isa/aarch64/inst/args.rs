@@ -739,3 +739,8 @@ impl VectorSize {
         }
     }
 }
+
+#[derive(Debug)]
+pub(crate) enum IsaFeature {
+    CRC,
+}

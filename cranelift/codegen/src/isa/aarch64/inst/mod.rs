@@ -143,6 +143,13 @@ fn inst_size_test() {
 }
 
 impl Inst {
+    fn available_with_any_feature(&self) -> SmallVec<[IsaFeature; 1]> {
+        match self {
+            Inst::Crc32c { .. } => smallvec![IsaFeature::CRC],
+            _ => smallvec![],
+        }
+    }
+
     /// Create an instruction that loads a constant, using one of serveral options (MOVZ, MOVN,
     /// logical immediate, or constant pool).
     pub fn load_constant<F: FnMut(Type) -> Writable<Reg>>(
@@ -430,6 +437,11 @@ fn aarch64_get_operands<F: Fn(VReg) -> VReg>(inst: &Inst, collector: &mut Operan
         &Inst::BitRR { rd, rn, .. } => {
             collector.reg_def(rd);
             collector.reg_use(rn);
+        }
+        &Inst::Crc32c { rd, rn, rm, .. } => {
+            collector.reg_def(rd);
+            collector.reg_use(rn);
+            collector.reg_use(rm);
         }
         &Inst::ULoad8 { rd, ref mem, .. }
         | &Inst::SLoad8 { rd, ref mem, .. }
@@ -1303,6 +1315,12 @@ impl Inst {
                 let rd = pretty_print_ireg(rd.to_reg(), size, allocs);
                 let rn = pretty_print_ireg(rn, size, allocs);
                 format!("{} {}, {}", op, rd, rn)
+            }
+            &Inst::Crc32c { size, rd, rn, rm } => {
+                let rd = pretty_print_ireg(rd.to_reg(), OperandSize::Size32, allocs);
+                let rn = pretty_print_ireg(rn, OperandSize::Size32, allocs);
+                let rm = pretty_print_ireg(rm, size, allocs);
+                format!("crc32c {}, {}, {}", rd, rn, rm)
             }
             &Inst::ULoad8 { rd, ref mem, .. }
             | &Inst::SLoad8 { rd, ref mem, .. }

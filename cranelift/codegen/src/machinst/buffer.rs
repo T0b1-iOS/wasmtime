@@ -1840,6 +1840,7 @@ mod test {
     use crate::ir::UserExternalNameRef;
     use crate::isa::aarch64::inst::xreg;
     use crate::isa::aarch64::inst::{BranchTarget, CondBrKind, EmitInfo, Inst};
+    use crate::isa::aarch64::settings as a64_settings;
     use crate::machinst::{MachInstEmit, MachInstEmitState};
     use crate::settings;
     use std::default::Default;
@@ -1851,10 +1852,15 @@ mod test {
     fn target(n: u32) -> BranchTarget {
         BranchTarget::Label(label(n))
     }
+    fn emit_info() -> EmitInfo {
+        let flags = settings::Flags::new(settings::builder());
+        let isa_flags = a64_settings::Flags::new(&flags, &a64_settings::builder());
+        EmitInfo::new(flags, isa_flags)
+    }
 
     #[test]
     fn test_elide_jump_to_next() {
-        let info = EmitInfo::new(settings::Flags::new(settings::builder()));
+        let info = emit_info();
         let mut buf = MachBuffer::new();
         let mut state = <Inst as MachInstEmit>::State::default();
         let constants = Default::default();
@@ -1870,7 +1876,7 @@ mod test {
 
     #[test]
     fn test_elide_trivial_jump_blocks() {
-        let info = EmitInfo::new(settings::Flags::new(settings::builder()));
+        let info = emit_info();
         let mut buf = MachBuffer::new();
         let mut state = <Inst as MachInstEmit>::State::default();
         let constants = Default::default();
@@ -1901,7 +1907,7 @@ mod test {
 
     #[test]
     fn test_flip_cond() {
-        let info = EmitInfo::new(settings::Flags::new(settings::builder()));
+        let info = emit_info();
         let mut buf = MachBuffer::new();
         let mut state = <Inst as MachInstEmit>::State::default();
         let constants = Default::default();
@@ -1947,7 +1953,7 @@ mod test {
 
     #[test]
     fn test_island() {
-        let info = EmitInfo::new(settings::Flags::new(settings::builder()));
+        let info = emit_info();
         let mut buf = MachBuffer::new();
         let mut state = <Inst as MachInstEmit>::State::default();
         let constants = Default::default();
@@ -2015,7 +2021,7 @@ mod test {
 
     #[test]
     fn test_island_backward() {
-        let info = EmitInfo::new(settings::Flags::new(settings::builder()));
+        let info = emit_info();
         let mut buf = MachBuffer::new();
         let mut state = <Inst as MachInstEmit>::State::default();
         let constants = Default::default();
@@ -2101,7 +2107,7 @@ mod test {
         // label7:
         //   ret
 
-        let info = EmitInfo::new(settings::Flags::new(settings::builder()));
+        let info = emit_info();
         let mut buf = MachBuffer::new();
         let mut state = <Inst as MachInstEmit>::State::default();
         let constants = Default::default();
@@ -2178,7 +2184,7 @@ mod test {
         //
         // label0, label1, ..., label4:
         //   b label0
-        let info = EmitInfo::new(settings::Flags::new(settings::builder()));
+        let info = emit_info();
         let mut buf = MachBuffer::new();
         let mut state = <Inst as MachInstEmit>::State::default();
         let constants = Default::default();

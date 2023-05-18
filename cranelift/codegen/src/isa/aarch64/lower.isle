@@ -1765,6 +1765,11 @@
        (a64_rev64 $I64 (value_regs_get x 1))
        (a64_rev64 $I64 (value_regs_get x 0))))
 
+;; Rules for `crc32c` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(rule (lower (crc32c x y @ (value_type op_ty)))
+      (crc32c_helper op_ty x y))
+
 ;;;; Rules for `bmask` ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Bmask tests the value against zero, and uses `csetm` to assert the result.
