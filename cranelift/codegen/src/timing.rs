@@ -78,6 +78,7 @@ define_passes! {
     vcode_stack_calc: "",
     vcode_sig_conversion: "",
     vcode_find_sret: "",
+    vcode_pre_lower_setup: "",
     vcode_lower: "VCode lowering",
     vcode_emit: "VCode emission",
     vcode_emit_finish: "VCode emission finalization",
