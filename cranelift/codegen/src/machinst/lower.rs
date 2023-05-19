@@ -383,25 +383,28 @@ impl<'func, I: VCodeInst> Lower<'func, I> {
 
         // Find the sret register, if it's used.
         let mut sret_reg = None;
-        for ret in vcode.abi().signature().returns.iter() {
-            if ret.purpose == ArgumentPurpose::StructReturn {
-                let entry_bb = f.stencil.layout.entry_block().unwrap();
-                for (&param, sig_param) in f
-                    .dfg
-                    .block_params(entry_bb)
-                    .iter()
-                    .zip(vcode.abi().signature().params.iter())
-                {
-                    if sig_param.purpose == ArgumentPurpose::StructReturn {
-                        let regs = value_regs[param];
-                        assert!(regs.len() == 1);
+        {
+            let _ttt = timing::vcode_find_sret();
+            for ret in vcode.abi().signature().returns.iter() {
+                if ret.purpose == ArgumentPurpose::StructReturn {
+                    let entry_bb = f.stencil.layout.entry_block().unwrap();
+                    for (&param, sig_param) in f
+                        .dfg
+                        .block_params(entry_bb)
+                        .iter()
+                        .zip(vcode.abi().signature().params.iter())
+                    {
+                        if sig_param.purpose == ArgumentPurpose::StructReturn {
+                            let regs = value_regs[param];
+                            assert!(regs.len() == 1);
 
-                        assert!(sret_reg.is_none());
-                        sret_reg = Some(regs);
+                            assert!(sret_reg.is_none());
+                            sret_reg = Some(regs);
+                        }
                     }
-                }
 
-                assert!(sret_reg.is_some());
+                    assert!(sret_reg.is_some());
+                }
             }
         }
 
