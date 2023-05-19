@@ -15,6 +15,7 @@ use crate::machinst::{
 };
 use crate::result::{CodegenError, CodegenResult};
 use crate::settings::{self as shared_settings, Flags};
+use crate::timing;
 use alloc::{boxed::Box, vec::Vec};
 use core::fmt;
 use cranelift_control::ControlPlane;
@@ -56,8 +57,12 @@ impl X64Backend {
         // This performs lowering to VCode, register-allocates the code, computes
         // block layout and finalizes branches. The result is ready for binary emission.
         let emit_info = EmitInfo::new(self.flags.clone(), self.x64_flags.clone());
-        let sigs = SigSet::new::<abi::X64ABIMachineSpec>(func, &self.flags)?;
-        let abi = abi::X64Callee::new(func, self, &self.x64_flags, &sigs)?;
+        let (sigs, abi) = {
+            let _tt = timing::vcode_pre_lower();
+            let sigs = SigSet::new::<abi::X64ABIMachineSpec>(func, &self.flags)?;
+            let abi = abi::X64Callee::new(func, self, &self.x64_flags, &sigs)?;
+            (sigs, abi)
+        };
         compile::compile::<Self>(func, domtree, self, abi, emit_info, sigs, ctrl_plane)
     }
 }

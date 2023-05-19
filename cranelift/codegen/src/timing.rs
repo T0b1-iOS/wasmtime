@@ -68,7 +68,13 @@ define_passes! {
     licm: "Loop invariant code motion",
     unreachable_code: "Remove unreachable blocks",
     remove_constant_phis: "Remove constant phi-nodes",
+    legalize: "Legalize IR",
 
+    vcode_lower_order: "Calculating lowering order for blocks",
+    vcode_pre_lower: "Setup for Lowering",
+    vcode_vreg_alloc: "VReg allocation",
+    vcode_inst_coloring: "Instruction coloring",
+    vcode_use_stats: "Instruction use information",
     vcode_lower: "VCode lowering",
     vcode_emit: "VCode emission",
     vcode_emit_finish: "VCode emission finalization",
@@ -158,6 +164,7 @@ pub struct PassTime {
 
 /// Accumulated timing for all passes.
 pub struct PassTimes {
+    /// blalaalala
     pub pass: [PassTime; NUM_PASSES],
 }
 

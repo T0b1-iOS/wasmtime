@@ -65,7 +65,7 @@ use crate::entity::SecondaryMap;
 use crate::fx::{FxHashMap, FxHashSet};
 use crate::inst_predicates::visit_block_succs;
 use crate::ir::{Block, Function, Inst, Opcode};
-use crate::{machinst::*, trace};
+use crate::{machinst::*, trace, timing};
 
 use smallvec::SmallVec;
 
@@ -151,6 +151,7 @@ impl BlockLoweringOrder {
         ctrl_plane: &mut ControlPlane,
     ) -> BlockLoweringOrder {
         trace!("BlockLoweringOrder: function body {:?}", f);
+        let _tt = timing::vcode_lower_order();
 
         // Step 1: compute the in-edge and out-edge count of every block.
         let mut block_in_count = SecondaryMap::with_default(0);

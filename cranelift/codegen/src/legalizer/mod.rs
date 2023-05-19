@@ -19,7 +19,7 @@ use crate::ir::immediates::Imm64;
 use crate::ir::types::{I128, I64};
 use crate::ir::{self, InstBuilder, InstructionData, MemFlags, Value};
 use crate::isa::TargetIsa;
-use crate::trace;
+use crate::{trace, timing};
 
 mod globalvalue;
 mod table;
@@ -45,6 +45,7 @@ fn imm_const(pos: &mut FuncCursor, arg: Value, imm: Imm64, is_signed: bool) -> V
 /// Perform a simple legalization by expansion of the function, without
 /// platform-specific transforms.
 pub fn simple_legalize(func: &mut ir::Function, cfg: &mut ControlFlowGraph, isa: &dyn TargetIsa) {
+    let _tt = timing::legalize();
     trace!("Pre-legalization function:\n{}", func.display());
 
     let mut pos = FuncCursor::new(func);

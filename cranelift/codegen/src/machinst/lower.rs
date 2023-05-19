@@ -18,7 +18,7 @@ use crate::machinst::{
     SigSet, VCode, VCodeBuilder, VCodeConstant, VCodeConstantData, VCodeConstants, VCodeInst,
     ValueRegs, Writable,
 };
-use crate::{trace, CodegenResult};
+use crate::{trace, CodegenResult, timing};
 use alloc::vec::Vec;
 use regalloc2::{MachineEnv, PRegSet};
 use smallvec::{smallvec, SmallVec};
@@ -334,6 +334,7 @@ impl<'func, I: VCodeInst> Lower<'func, I> {
         block_order: BlockLoweringOrder,
         sigs: SigSet,
     ) -> CodegenResult<Self> {
+        let _tt = timing::vcode_pre_lower();
         let constants = VCodeConstants::with_capacity(f.dfg.constants.len());
         let vcode = VCodeBuilder::new(
             sigs,
@@ -348,30 +349,33 @@ impl<'func, I: VCodeInst> Lower<'func, I> {
 
         let mut value_regs = SecondaryMap::with_default(ValueRegs::invalid());
 
-        // Assign a vreg to each block param and each inst result.
-        for bb in f.layout.blocks() {
-            for &param in f.dfg.block_params(bb) {
-                let ty = f.dfg.value_type(param);
-                if value_regs[param].is_invalid() {
-                    let regs = vregs.alloc(ty)?;
-                    value_regs[param] = regs;
-                    trace!("bb {} param {}: regs {:?}", bb, param, regs);
-                }
-            }
-            for inst in f.layout.block_insts(bb) {
-                for &result in f.dfg.inst_results(inst) {
-                    let ty = f.dfg.value_type(result);
-                    if value_regs[result].is_invalid() && !ty.is_invalid() {
+        {
+            let _ttt = timing::vcode_vreg_alloc();
+            // Assign a vreg to each block param and each inst result.
+            for bb in f.layout.blocks() {
+                for &param in f.dfg.block_params(bb) {
+                    let ty = f.dfg.value_type(param);
+                    if value_regs[param].is_invalid() {
                         let regs = vregs.alloc(ty)?;
-                        value_regs[result] = regs;
-                        trace!(
-                            "bb {} inst {} ({:?}): result {} regs {:?}",
-                            bb,
-                            inst,
-                            f.dfg.insts[inst],
-                            result,
-                            regs,
-                        );
+                        value_regs[param] = regs;
+                        trace!("bb {} param {}: regs {:?}", bb, param, regs);
+                    }
+                }
+                for inst in f.layout.block_insts(bb) {
+                    for &result in f.dfg.inst_results(inst) {
+                        let ty = f.dfg.value_type(result);
+                        if value_regs[result].is_invalid() && !ty.is_invalid() {
+                            let regs = vregs.alloc(ty)?;
+                            value_regs[result] = regs;
+                            trace!(
+                                "bb {} inst {} ({:?}): result {} regs {:?}",
+                                bb,
+                                inst,
+                                f.dfg.insts[inst],
+                                result,
+                                regs,
+                            );
+                        }
                     }
                 }
             }
@@ -407,29 +411,35 @@ impl<'func, I: VCodeInst> Lower<'func, I> {
         let mut block_end_colors = SecondaryMap::with_default(InstColor::new(0));
         let mut side_effect_inst_entry_colors = FxHashMap::default();
         let mut inst_constants = FxHashMap::default();
-        for bb in f.layout.blocks() {
-            cur_color += 1;
-            for inst in f.layout.block_insts(bb) {
-                let side_effect = has_lowering_side_effect(f, inst);
+        {
+            let _ttt = timing::vcode_inst_coloring();
+            for bb in f.layout.blocks() {
+                cur_color += 1;
+                for inst in f.layout.block_insts(bb) {
+                    let side_effect = has_lowering_side_effect(f, inst);
 
-                trace!("bb {} inst {} has color {}", bb, inst, cur_color);
-                if side_effect {
-                    side_effect_inst_entry_colors.insert(inst, InstColor::new(cur_color));
-                    trace!(" -> side-effecting; incrementing color for next inst");
-                    cur_color += 1;
+                    trace!("bb {} inst {} has color {}", bb, inst, cur_color);
+                    if side_effect {
+                        side_effect_inst_entry_colors.insert(inst, InstColor::new(cur_color));
+                        trace!(" -> side-effecting; incrementing color for next inst");
+                        cur_color += 1;
+                    }
+
+                    // Determine if this is a constant; if so, add to the table.
+                    if let Some(c) = is_constant_64bit(f, inst) {
+                        trace!(" -> constant: {}", c);
+                        inst_constants.insert(inst, c);
+                    }
                 }
 
-                // Determine if this is a constant; if so, add to the table.
-                if let Some(c) = is_constant_64bit(f, inst) {
-                    trace!(" -> constant: {}", c);
-                    inst_constants.insert(inst, c);
-                }
+                block_end_colors[bb] = InstColor::new(cur_color);
             }
-
-            block_end_colors[bb] = InstColor::new(cur_color);
         }
 
-        let value_ir_uses = Self::compute_use_states(f);
+        let value_ir_uses = {
+            let _ttt = timing::vcode_use_stats();
+            Self::compute_use_states(f)
+        };
 
         Ok(Lower {
             f,
