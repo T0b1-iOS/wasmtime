@@ -335,6 +335,8 @@ impl<'func, I: VCodeInst> Lower<'func, I> {
         sigs: SigSet,
     ) -> CodegenResult<Self> {
         let _tt = timing::vcode_pre_lower();
+        
+        let ttt = timing::vcode_pre_lower_setup();
         let constants = VCodeConstants::with_capacity(f.dfg.constants.len());
         let vcode = VCodeBuilder::new(
             sigs,
@@ -348,6 +350,7 @@ impl<'func, I: VCodeInst> Lower<'func, I> {
         let mut vregs = VRegAllocator::new();
 
         let mut value_regs = SecondaryMap::with_default(ValueRegs::invalid());
+        std::mem::drop(ttt);
 
         {
             let _ttt = timing::vcode_vreg_alloc();
