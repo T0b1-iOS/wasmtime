@@ -58,7 +58,7 @@ impl X64Backend {
         // block layout and finalizes branches. The result is ready for binary emission.
         let emit_info = EmitInfo::new(self.flags.clone(), self.x64_flags.clone());
         let (sigs, abi) = {
-            let _tt = timing::vcode_pre_lower();
+            //let _tt = timing::vcode_pre_lower();
             let sigs = SigSet::new::<abi::X64ABIMachineSpec>(func, &self.flags)?;
             let abi = abi::X64Callee::new(func, self, &self.x64_flags, &sigs)?;
             (sigs, abi)
