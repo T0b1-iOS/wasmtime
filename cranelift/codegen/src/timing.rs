@@ -75,6 +75,8 @@ define_passes! {
     vcode_vreg_alloc: "VReg allocation",
     vcode_inst_coloring: "Instruction coloring",
     vcode_use_stats: "Instruction use information",
+    vcode_stack_calc: "",
+    vcode_sig_conversion: "",
     vcode_lower: "VCode lowering",
     vcode_emit: "VCode emission",
     vcode_emit_finish: "VCode emission finalization",

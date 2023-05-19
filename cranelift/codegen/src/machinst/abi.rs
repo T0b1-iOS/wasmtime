@@ -717,6 +717,7 @@ impl SigSet {
     where
         M: ABIMachineSpec,
     {
+        let _tt = crate::timing::vcode_sig_conversion();
         let arg_estimate = func.dfg.signatures.len() * 6;
 
         let mut sigs = SigSet {
@@ -1043,6 +1044,7 @@ impl<M: ABIMachineSpec> Callee<M> {
         isa_flags: &M::F,
         sigs: &SigSet,
     ) -> CodegenResult<Self> {
+        let _tt = crate::timing::vcode_stack_calc();
         trace!("ABI: func signature {:?}", f.signature);
 
         let flags = isa.flags().clone();
